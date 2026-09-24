@@ -11,8 +11,8 @@
       --bg-exercices: #98d380;
       --bg-etude: #ff9999;
       --border-color: #cccccc;
-      /* Hauteur dynamique pour faire rentrer exactement 12 lignes (8h à 19h) + barres dans l'écran */
-      --row-height: calc((100vh - 82px) / 12);
+      /* Hauteur dynamique optimisée pour faire tenir 08:00 à 19:00 (12 créneaux) sans scroll */
+      --row-height: calc((100vh - 72px) / 12);
     }
 
     * { box-sizing: border-box; }
@@ -23,7 +23,7 @@
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
-      background-color: #f4f6f9;
+      background-color: #ffffff;
       overflow: hidden; /* Supprime le scroll global */
     }
 
@@ -54,11 +54,12 @@
     .auth-card button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; background: #007bff; color: white; cursor: pointer; }
     .switch-mode { text-align: center; color: #007bff; cursor: pointer; font-size: 12px; text-decoration: underline; }
 
-    /* BARRE DE CONTROLE DU HAUT (COMPACTE) */
+    /* BARRE DE CONTROLE DU HAUT (COMPACTE & BLANCHE) */
     .controls-box {
-      background: #343a40;
-      padding: 4px 10px;
-      height: 38px;
+      background: #ffffff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 2px 8px;
+      height: 32px;
       width: 100%;
       display: flex;
       justify-content: space-between;
@@ -69,22 +70,22 @@
     .controls-group {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
 
     .controls-box select {
-      padding: 2px 6px;
+      padding: 2px 4px;
       font-size: 11px;
       font-weight: bold;
       border-radius: 3px;
       border: 1px solid #ccc;
       background: white;
       color: #333;
-      height: 26px;
+      height: 24px;
     }
 
     .btn-action {
-      padding: 3px 8px;
+      padding: 2px 6px;
       font-size: 11px;
       font-weight: bold;
       border-radius: 3px;
@@ -93,12 +94,12 @@
       color: white;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      height: 26px;
+      gap: 3px;
+      height: 24px;
       white-space: nowrap;
     }
 
-    /* COULEURS DES BOUTONS IMAGE 1 */
+    /* COULEURS DES BOUTONS */
     .btn-draw { background: #6f42c1; }
     .btn-arrow { background: #17a2b8; }
     .btn-eraser { background: #ffc107; color: #111; }
@@ -109,12 +110,12 @@
     .btn-import { background: #17a2b8; }
     .btn-save-cloud { background: #28a745; }
     .btn-logout { background: #6c757d; }
-    .btn-active { outline: 2px solid white; box-shadow: 0 0 4px rgba(255,255,255,0.8); }
+    .btn-active { outline: 2px solid #333; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
 
     /* CONTENEUR ET GRILLE */
     .timetable-container {
       width: 100vw;
-      height: calc(100vh - 38px);
+      height: calc(100vh - 32px);
       overflow-y: auto;
       background-color: white;
       position: relative;
@@ -133,19 +134,21 @@
       cursor: crosshair;
     }
 
+    /* EN-TÊTE DES JOURS (REDUIT ET BLANC) */
     .header-row {
       display: grid;
       grid-template-columns: 55px repeat(7, 1fr);
       position: sticky;
       top: 0;
       z-index: 10;
-      background-color: #212529;
-      color: white;
-      height: 22px;
+      background-color: #ffffff;
+      color: #111111;
+      height: 20px;
+      border-bottom: 2px solid #cccccc;
     }
 
     .header-cell {
-      border-right: 1px solid #4f5962;
+      border-right: 1px solid #e0e0e0;
       font-weight: bold;
       display: flex;
       align-items: center;
@@ -157,12 +160,12 @@
       background-color: #007bff;
       color: white;
       font-weight: bold;
-      padding: 3px 10px;
+      padding: 2px 8px;
       font-size: 11px;
       position: sticky;
-      top: 22px;
+      top: 20px;
       z-index: 9;
-      height: 22px;
+      height: 20px;
       display: flex;
       align-items: center;
     }
@@ -190,7 +193,7 @@
 
     .slot { position: relative; cursor: pointer; touch-action: none; }
     .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #007bff; }
-    .slot:hover { background-color: #f0f0f0; }
+    .slot:hover { background-color: #f9f9f9; }
 
     /* CARTES DE COURS */
     .course-card {
@@ -998,7 +1001,6 @@
       card.dataset.loc = loc;
       card.dataset.duration = duration;
       
-      /* Calcul dynamique basé sur la hauteur de ligne relative CSS */
       card.style.height = `calc(var(--row-height) * ${duration} - 2px)`;
       card.draggable = true;
 
