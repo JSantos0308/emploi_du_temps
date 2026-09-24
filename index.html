@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mon Emploi du Temps</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 20px;
       background-color: #f4f6f9;
       color: #333;
     }
     .container {
-      max-width: 800px;
+      max-width: 1100px;
       margin: 0 auto;
       background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
     .auth-box, .app-box {
       display: none;
@@ -26,27 +29,42 @@
     .active {
       display: block;
     }
-    input, button, textarea {
+    input[type="email"], input[type="password"] {
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
+      padding: 12px;
+      margin: 8px 0 16px 0;
       border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
+      border-radius: 6px;
     }
     button {
-      background-color: #007bff;
-      color: white;
+      padding: 12px 20px;
       border: none;
+      border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    button:hover {
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+      width: 100%;
+    }
+    .btn-primary:hover {
       background-color: #0056b3;
+    }
+    .btn-save {
+      background-color: #28a745;
+      color: white;
+      font-size: 16px;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .btn-save:hover {
+      background-color: #218838;
     }
     .btn-logout {
       background-color: #dc3545;
-      width: auto;
+      color: white;
       float: right;
     }
     .btn-logout:hover {
@@ -54,18 +72,67 @@
     }
     .switch-mode {
       text-align: center;
-      margin-top: 10px;
+      margin-top: 15px;
       cursor: pointer;
       color: #007bff;
       text-decoration: underline;
     }
-    textarea {
-      height: 200px;
-      resize: vertical;
-    }
     .header {
       overflow: hidden;
       margin-bottom: 20px;
+      border-bottom: 2px solid #eef0f3;
+      padding-bottom: 15px;
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 22px;
+      color: #2c3e50;
+    }
+    
+    /* Table d'emploi du temps */
+    .table-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #dee2e6;
+      padding: 10px;
+      text-align: center;
+      min-width: 140px;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+      font-weight: 600;
+    }
+    th.time-col {
+      background-color: #343a40;
+      width: 100px;
+      min-width: 100px;
+    }
+    td.time-cell {
+      background-color: #f8f9fa;
+      font-weight: bold;
+      color: #495057;
+    }
+    td textarea {
+      width: 100%;
+      height: 60px;
+      border: none;
+      resize: none;
+      font-family: inherit;
+      font-size: 13px;
+      background: transparent;
+      outline: none;
+      text-align: center;
+    }
+    td textarea:focus {
+      background-color: #e8f0fe;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -78,7 +145,7 @@
     <h2 id="auth-title">Connexion</h2>
     <input type="email" id="email" placeholder="Adresse e-mail">
     <input type="password" id="password" placeholder="Mot de passe">
-    <button id="btn-auth" onclick="handleAuth()">Se connecter</button>
+    <button id="btn-auth" class="btn-primary" onclick="handleAuth()">Se connecter</button>
     <p id="auth-error" style="color: red; text-align: center;"></p>
     <div class="switch-mode" onclick="toggleAuthMode()" id="switch-text">
       Pas encore de compte ? S'inscrire
@@ -91,11 +158,27 @@
       <button class="btn-logout" onclick="logout()">Se déconnecter</button>
       <h2 id="welcome-msg">Mon Emploi du Temps</h2>
     </div>
-    
-    <label for="schedule-data"><b>Vos cours et notes sauvegardés :</b></label>
-    <textarea id="schedule-data" placeholder="Écrivez vos cours, horaires ou notes ici..."></textarea>
-    <button onclick="saveData()">💾 Enregistrer les modifications</button>
-    <p id="save-status" style="color: green; font-weight: bold;"></p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th class="time-col">Horaire</th>
+            <th>Lundi</th>
+            <th>Mardi</th>
+            <th>Mercredi</th>
+            <th>Jeudi</th>
+            <th>Vendredi</th>
+          </tr>
+        </thead>
+        <tbody id="schedule-body">
+          <!-- Généré dynamiquement en JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <button class="btn-save" onclick="saveData()">💾 Enregistrer mon emploi du temps</button>
+    <p id="save-status" style="color: green; font-weight: bold; text-align: center; margin-top: 10px;"></p>
   </div>
 
 </div>
@@ -117,7 +200,6 @@
     getDoc 
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // Vos identifiants Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyADndGQPP7OjP0pK1wqfeZrdZQ84_iLrys",
     authDomain: "emploi-du-temps-2ffd6.firebaseapp.com",
@@ -128,7 +210,6 @@
     measurementId: "G-NX917W181S"
   };
 
-  // Initialisation
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -136,7 +217,46 @@
   let isSignUpMode = false;
   let currentUser = null;
 
-  // Basculer entre Connexion et Inscription
+  const hours = [
+    "08:00 - 10:00",
+    "10:00 - 12:00",
+    "12:00 - 14:00",
+    "14:00 - 16:00",
+    "16:00 - 18:00"
+  ];
+
+  const days = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"];
+
+  // Génération du tableau d'emploi du temps
+  function generateTable() {
+    const tbody = document.getElementById('schedule-body');
+    tbody.innerHTML = '';
+
+    hours.forEach((hour, hIndex) => {
+      const tr = document.createElement('tr');
+      
+      // Colonne Heure
+      const tdTime = document.createElement('td');
+      tdTime.className = 'time-cell';
+      tdTime.innerText = hour;
+      tr.appendChild(tdTime);
+
+      // Colonnes Jours
+      days.forEach(day => {
+        const td = document.createElement('td');
+        const textarea = document.createElement('textarea');
+        textarea.id = `${day}-${hIndex}`;
+        textarea.placeholder = "Ajouter un cours...";
+        td.appendChild(textarea);
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  generateTable();
+
   window.toggleAuthMode = function() {
     isSignUpMode = !isSignUpMode;
     document.getElementById('auth-title').innerText = isSignUpMode ? "Créer un compte" : "Connexion";
@@ -145,7 +265,6 @@
     document.getElementById('auth-error').innerText = "";
   };
 
-  // Action Connexion / Inscription
   window.handleAuth = async function() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -163,12 +282,10 @@
     }
   };
 
-  // Déconnexion
   window.logout = function() {
     signOut(auth);
   };
 
-  // Écouteur d'état de connexion (s'exécute quand l'utilisateur se connecte/déconnecte)
   onAuthStateChanged(auth, async (user) => {
     const authSec = document.getElementById('auth-section');
     const appSec = document.getElementById('app-section');
@@ -178,8 +295,6 @@
       authSec.classList.remove('active');
       appSec.classList.add('active');
       document.getElementById('welcome-msg').innerText = "Emploi du temps (" + user.email + ")";
-      
-      // Charger les données de cet utilisateur précis
       loadData(user.uid);
     } else {
       currentUser = null;
@@ -188,33 +303,45 @@
     }
   });
 
-  // Sauvegarder les données dans Firestore
   window.saveData = async function() {
     if (!currentUser) return;
-    const data = document.getElementById('schedule-data').value;
     const statusEl = document.getElementById('save-status');
+
+    const scheduleData = {};
+    days.forEach(day => {
+      hours.forEach((_, hIndex) => {
+        const cellValue = document.getElementById(`${day}-${hIndex}`).value;
+        scheduleData[`${day}-${hIndex}`] = cellValue;
+      });
+    });
 
     try {
       await setDoc(doc(db, "users", currentUser.uid), {
-        content: data,
+        schedule: scheduleData,
         updatedAt: new Date()
       });
-      statusEl.innerText = "Modifications enregistrées avec succès !";
+      statusEl.innerText = "Emploi du temps enregistré avec succès !";
       setTimeout(() => statusEl.innerText = "", 3000);
     } catch (e) {
       alert("Erreur de sauvegarde : " + e.message);
     }
   };
 
-  // Charger les données depuis Firestore
   async function loadData(uid) {
     const docRef = doc(db, "users", uid);
     const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      document.getElementById('schedule-data').value = docSnap.data().content || "";
-    } else {
-      document.getElementById('schedule-data').value = "";
+    if (docSnap.exists() && docSnap.data().schedule) {
+      const schedule = docSnap.data().schedule;
+      days.forEach(day => {
+        hours.forEach((_, hIndex) => {
+          const key = `${day}-${hIndex}`;
+          const el = document.getElementById(key);
+          if (el && schedule[key] !== undefined) {
+            el.value = schedule[key];
+          }
+        });
+      });
     }
   }
 </script>
