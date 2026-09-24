@@ -2,1041 +2,222 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Mon Emploi du Temps XL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Emploi du Temps</title>
   <style>
-    :root {
-      --bg-theorie: #8bb0e8;
-      --bg-labo: #c5fa79;
-      --bg-exercices: #98d380;
-      --bg-etude: #ff9999;
-      --border-color: #cccccc;
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
+    body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
       background-color: #f4f6f9;
-      overflow: hidden;
-    }
-
-    .controls-box {
-      background: white;
-      padding: 8px 15px;
-      width: 100%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      z-index: 20;
-      position: relative;
-    }
-
-    .controls-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .controls-box select, .btn-action {
-      padding: 6px 12px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-
-    .btn-action {
-      border: none;
-      cursor: pointer;
-      color: white;
-    }
-
-    .btn-draw { background: #6f42c1; }
-    .btn-arrow { background: #212529; }
-    .btn-eraser { background: #ffc107; color: #111; }
-    .btn-clear-draw { background: #6c757d; }
-    .btn-copy { background: #0275d8; }
-    .btn-clear { background: #dc3545; }
-    .btn-io { background: #20c997; }
-    .btn-active { outline: 3px solid #111; }
-
-    .timetable-container {
-      width: 100vw;
-      height: calc(100vh - 50px);
-      overflow-y: auto;
-      background-color: white;
-      position: relative;
-    }
-
-    #drawingCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 15;
-      pointer-events: none;
-    }
-
-    #drawingCanvas.active {
-      pointer-events: auto;
-      cursor: crosshair;
-    }
-
-    .header-row {
-      display: grid;
-      grid-template-columns: 75px repeat(7, 1fr);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background-color: #343a40;
-      color: white;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    .header-cell {
-      border-right: 1px solid #4f5962;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      padding: 10px 2px;
-    }
-
-    .week-divider {
-      background-color: #0275d8;
-      color: white;
-      font-weight: bold;
-      padding: 8px 15px;
-      font-size: 14px;
-      position: sticky;
-      top: 39px;
-      z-index: 9;
-      border-top: 2px solid #0056b3;
-      border-bottom: 2px solid #0056b3;
-    }
-
-    .timetable-body {
-      display: grid;
-      grid-template-columns: 75px repeat(7, 1fr);
-      grid-template-rows: repeat(12, 70px);
-    }
-
-    .time-cell, .slot {
-      border-bottom: 1px solid var(--border-color);
-      border-right: 1px solid var(--border-color);
-    }
-
-    .time-cell {
-      background-color: #f8f9fa;
-      font-size: 13px;
-      padding: 6px;
       color: #333;
-      font-weight: bold;
     }
-
-    .slot { position: relative; cursor: pointer; touch-action: none; }
-    .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #0275d8; }
-    .slot:hover { background-color: #f0f0f0; }
-
-    .course-card {
-      position: absolute;
-      top: 2px; left: 2px; right: 2px;
-      border-radius: 4px;
-      padding: 6px 8px;
-      color: #111;
-      overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.15);
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      gap: 4px;
-      cursor: grab;
-      user-select: none;
-      touch-action: none;
-    }
-
-    .course-card:active {
-      cursor: grabbing;
-      opacity: 0.7;
-    }
-
-    .course-card.theorie { background-color: var(--bg-theorie); }
-    .course-card.exercices { background-color: var(--bg-exercices); }
-    .course-card.labo { background-color: var(--bg-labo); }
-    .course-card.etude { background-color: var(--bg-etude); }
-
-    .course-card .header-title { 
-      font-weight: bold; 
-      font-size: 13px; 
-      line-height: 1.2;
-    }
-    .course-card .course-name { 
-      font-size: 12px; 
-      line-height: 1.2;
-      opacity: 0.95; 
-    }
-    .course-card .location { 
-      font-size: 12px; 
-      font-weight: bold; 
-      line-height: 1.2;
-      margin-top: auto; 
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-content {
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
       background: white;
       padding: 20px;
       border-radius: 8px;
-      width: 340px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      font-size: 14px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-
-    .modal-content input, .modal-content select {
-      padding: 8px;
-      font-size: 14px;
+    .auth-box, .app-box {
+      display: none;
+    }
+    .active {
+      display: block;
+    }
+    input, button, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
+      box-sizing: border-box;
     }
-
-    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: space-between; margin-top: 10px; }
-    .btn-save { background: #28a745; color: white; }
-    .btn-delete { background: #dc3545; color: white; }
-    .btn-cancel { background: #6c757d; color: white; }
-    .btn-modal-copy { background: #17a2b8; color: white; }
-    .btn-modal-paste { background: #fd7e14; color: white; }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .btn-logout {
+      background-color: #dc3545;
+      width: auto;
+      float: right;
+    }
+    .btn-logout:hover {
+      background-color: #bd2130;
+    }
+    .switch-mode {
+      text-align: center;
+      margin-top: 10px;
+      cursor: pointer;
+      color: #007bff;
+      text-decoration: underline;
+    }
+    textarea {
+      height: 200px;
+      resize: vertical;
+    }
+    .header {
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
 
-  <div class="controls-box">
-    <div class="controls-group">
-      <select id="selectWeek" onchange="scrollToSelectedWeek()"></select>
-    </div>
+<div class="container">
 
-    <div class="controls-group">
-      <button id="btnPencil" class="btn-action btn-draw" onclick="setMode('draw')">✏️ Crayon</button>
-      <button id="btnArrow" class="btn-action btn-arrow" onclick="setMode('arrow')">↗️ Flèche</button>
-      <button id="btnEraser" class="btn-action btn-eraser" onclick="setMode('eraser')">🧹 Gomme</button>
-      <button class="btn-action btn-clear-draw" onclick="clearCanvas()">🧼 Tout Effacer</button>
-    </div>
-
-    <div class="controls-group">
-      <button class="btn-action btn-copy" onclick="copyPreviousWeek()">📋 Copier S. Précédente</button>
-      <button class="btn-action btn-clear" onclick="clearCurrentWeek()">🗑️ Effacer S. Visible</button>
-      <button class="btn-action btn-io" onclick="exportData()">💾 Exporter</button>
-      <button class="btn-action btn-io" onclick="document.getElementById('importFile').click()">📂 Importer</button>
-      <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+  <!-- ZONE DE CONNEXION / INSCRIPTION -->
+  <div id="auth-section" class="auth-box active">
+    <h2 id="auth-title">Connexion</h2>
+    <input type="email" id="email" placeholder="Adresse e-mail">
+    <input type="password" id="password" placeholder="Mot de passe">
+    <button id="btn-auth" onclick="handleAuth()">Se connecter</button>
+    <p id="auth-error" style="color: red; text-align: center;"></p>
+    <div class="switch-mode" onclick="toggleAuthMode()" id="switch-text">
+      Pas encore de compte ? S'inscrire
     </div>
   </div>
 
-  <div class="timetable-container" id="scrollContainer">
-    <canvas id="drawingCanvas"></canvas>
-
-    <div class="header-row">
-      <div class="header-cell">Heure</div>
-      <div class="header-cell">Lundi</div>
-      <div class="header-cell">Mardi</div>
-      <div class="header-cell">Mercredi</div>
-      <div class="header-cell">Jeudi</div>
-      <div class="header-cell">Vendredi</div>
-      <div class="header-cell">Samedi</div>
-      <div class="header-cell">Dimanche</div>
+  <!-- ZONE APPLICATION (EMPLOI DU TEMPS) -->
+  <div id="app-section" class="app-box">
+    <div class="header">
+      <button class="btn-logout" onclick="logout()">Se déconnecter</button>
+      <h2 id="welcome-msg">Mon Emploi du Temps</h2>
     </div>
-
-    <div id="weeksWrapper"></div>
+    
+    <label for="schedule-data"><b>Vos cours et notes sauvegardés :</b></label>
+    <textarea id="schedule-data" placeholder="Écrivez vos cours, horaires ou notes ici..."></textarea>
+    <button onclick="saveData()">💾 Enregistrer les modifications</button>
+    <p id="save-status" style="color: green; font-weight: bold;"></p>
   </div>
 
-  <div class="modal" id="courseModal">
-    <div class="modal-content">
-      <h3 id="modalTitle">Détails de l'activité</h3>
-      
-      <label>Nom / Code du cours :</label>
-      <input type="text" id="courseSearch" list="coursesList" placeholder="Ex: ELECH3001, MATHH2000...">
-      <datalist id="coursesList"></datalist>
+</div>
 
-      <label>Durée :</label>
-      <select id="courseDuration">
-        <option value="1">1 heure</option>
-        <option value="2" selected>2 heures</option>
-        <option value="3">3 heures</option>
-        <option value="4">4 heures</option>
-      </select>
+<!-- SCRIPTS FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-      <label>Type :</label>
-      <select id="courseType" onchange="handleTypeChange()">
-        <option value="theorie">Théorie (Bleu)</option>
-        <option value="exercices">Exercices / TP (Vert Moyen)</option>
-        <option value="labo">Laboratoire / Anglais (Vert Clair)</option>
-        <option value="etude">Étude perso (Rouge)</option>
-      </select>
+  // Vos identifiants Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyADndGQPP7OjP0pK1wqfeZrdZQ84_iLrys",
+    authDomain: "emploi-du-temps-2ffd6.firebaseapp.com",
+    projectId: "emploi-du-temps-2ffd6",
+    storageBucket: "emploi-du-temps-2ffd6.firebasestorage.app",
+    messagingSenderId: "897752698709",
+    appId: "1:897752698709:web:a1ac2f8be097f3ad6a69dc",
+    measurementId: "G-NX917W181S"
+  };
 
-      <label>Local / Lieu :</label>
-      <input type="text" id="courseLocation" list="locationsList" placeholder="Ex: S.UD2.218A, Auditoire VOGEL...">
-      <datalist id="locationsList"></datalist>
+  // Initialisation
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-      <div class="btn-group">
-        <button class="btn-action btn-save" onclick="saveCourse()">Enregistrer</button>
-        <button id="btnModalCopy" class="btn-action btn-modal-copy" onclick="copyCurrentCourseModal()">📋 Copier</button>
-        <button id="btnModalPaste" class="btn-action btn-modal-paste" onclick="pasteCourseModal()" style="display:none;">📋 Coller</button>
-        <button class="btn-action btn-delete" onclick="deleteCourse()">Supprimer</button>
-        <button class="btn-action btn-cancel" onclick="closeModal()">Annuler</button>
-      </div>
-    </div>
-  </div>
+  let isSignUpMode = false;
+  let currentUser = null;
 
-  <script>
-    const startDateS1 = new Date(2026, 8, 14);
-    const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-    let currentVisibleWeek = "S1";
-    let selectedSlot = null;
-    let draggedCardData = null;
-    let copiedCourseBuffer = null;
-    let hoveredSlot = null;
+  // Basculer entre Connexion et Inscription
+  window.toggleAuthMode = function() {
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('auth-title').innerText = isSignUpMode ? "Créer un compte" : "Connexion";
+    document.getElementById('btn-auth').innerText = isSignUpMode ? "S'inscrire" : "Se connecter";
+    document.getElementById('switch-text').innerText = isSignUpMode ? "Déjà un compte ? Se connecter" : "Pas encore de compte ? S'inscrire";
+    document.getElementById('auth-error').innerText = "";
+  };
 
-    let weekDrawings = {}; 
-    let currentPath = null;
+  // Action Connexion / Inscription
+  window.handleAuth = async function() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('auth-error');
+    errorEl.innerText = "";
 
-    const courseDescriptions = {
-      "ELECH3001": "Électricité appliquée",
-      "MATHH2000": "Analyse II",
-      "MATHH2002": "Calcul des probabilités et statistiques",
-      "MATHH3001": "Signaux et systèmes",
-      "MECAH200": "Mécanique rationnelle II",
-      "MECAH3001": "Fluid mechanics and transfer processes",
-      "MECAH301": "Systèmes énergétiques"
-    };
-
-    const presetCourses = [
-      { code: "ELECH3001", name: "ELECH3001 - Théorie", type: "theorie" },
-      { code: "ELECH3001", name: "ELECH3001 - Exercices 1", type: "exercices" },
-      { code: "ELECH3001", name: "ELECH3001 - Exercices 2", type: "exercices" },
-      { code: "ELECH3001", name: "ELECH3001 - Laboratoire", type: "labo" },
-
-      { code: "MATHH2000", name: "MATHH2000 - Théorie", type: "theorie" },
-      { code: "MATHH2000", name: "MATHH2000 - Exercices", type: "exercices" },
-
-      { code: "MATHH2002", name: "MATHH2002 - Théorie", type: "theorie" },
-      { code: "MATHH2002", name: "MATHH2002 - Exercices", type: "exercices" },
-
-      { code: "MATHH3001", name: "MATHH3001 - Théorie", type: "theorie" },
-      { code: "MATHH3001", name: "MATHH3001 - Exercices", type: "exercices" },
-
-      { code: "MECAH200", name: "MECAH200 - Théorie", type: "theorie" },
-      { code: "MECAH200", name: "MECAH200 - Exercices", type: "exercices" },
-      { code: "MECAH200", name: "MECAH200 - Laboratoire", type: "labo" },
-
-      { code: "MECAH3001", name: "MECAH3001 - Théorie", type: "theorie" },
-      { code: "MECAH3001", name: "MECAH3001 - Exercices", type: "exercices" },
-      { code: "MECAH3001", name: "MECAH3001 - Anglais", type: "labo" },
-
-      { code: "MECAH301", name: "MECAH301 - Théorie", type: "theorie" },
-      { code: "MECAH301", name: "MECAH301 - Exercices", type: "exercices" }
-    ];
-
-    const datalistCourses = document.getElementById('coursesList');
-    presetCourses.forEach(c => {
-      let option = document.createElement('option');
-      option.value = c.name;
-      datalistCourses.appendChild(option);
-    });
-
-    document.getElementById('courseSearch').addEventListener('input', function(e) {
-      const val = e.target.value;
-      const found = presetCourses.find(c => c.name === val);
-      if (found) {
-        document.getElementById('courseType').value = found.type;
-        handleTypeChange();
-      }
-    });
-
-    function getStoredLocations() {
-      const saved = localStorage.getItem('timetable_saved_locations');
-      return saved ? JSON.parse(saved) : ['Bibliothèque', 'Maison', 'Casa'];
-    }
-
-    function saveLocation(loc) {
-      if (!loc || loc.trim() === '') return;
-      let locations = getStoredLocations();
-      loc = loc.trim();
-      if (!locations.includes(loc)) {
-        locations.push(loc);
-        localStorage.setItem('timetable_saved_locations', JSON.stringify(locations));
-      }
-    }
-
-    function updateLocationsDatalist() {
-      const locationsList = document.getElementById('locationsList');
-      locationsList.innerHTML = '';
-      const locations = getStoredLocations();
-      locations.forEach(loc => {
-        let opt = document.createElement('option');
-        opt.value = loc;
-        locationsList.appendChild(opt);
-      });
-    }
-
-    function handleTypeChange() {
-      updateLocationsDatalist();
-    }
-
-    const weekSelect = document.getElementById('selectWeek');
-    const weeksWrapper = document.getElementById('weeksWrapper');
-
-    function formatDateShort(date) {
-      const d = String(date.getDate()).padStart(2, '0');
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      return `${d}/${m}`;
-    }
-
-    function getMondayOfWeek(weekNum) {
-      const monday = new Date(startDateS1);
-      monday.setDate(startDateS1.getDate() + (weekNum - 1) * 7);
-      return monday;
-    }
-
-    function getCurrentWeekKey() {
-      const today = new Date();
-      const diffTime = today - startDateS1;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      let weekNum = Math.floor(diffDays / 7) + 1;
-      if (weekNum < 1) weekNum = 1;
-      if (weekNum > 14) weekNum = 14;
-      return `S${weekNum}`;
-    }
-
-    for (let w = 1; w <= 14; w++) {
-      const weekKey = `S${w}`;
-      const mon = getMondayOfWeek(w);
-      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-
-      let opt = document.createElement('option');
-      opt.value = weekKey;
-      opt.textContent = `Semaine ${w} (${formatDateShort(mon)} - ${formatDateShort(sun)})`;
-      weekSelect.appendChild(opt);
-
-      const weekBlock = document.createElement('div');
-      weekBlock.id = `week-block-${weekKey}`;
-
-      const divider = document.createElement('div');
-      divider.className = 'week-divider';
-      const divSpan = document.createElement('span');
-      divSpan.textContent = `📅 SEMAINE ${w} (${formatDateShort(mon)} au ${formatDateShort(sun)})`;
-      divider.appendChild(divSpan);
-      weekBlock.appendChild(divider);
-
-      const grid = document.createElement('div');
-      grid.className = 'timetable-body';
-
-      hours.forEach((h, hIndex) => {
-        const timeCell = document.createElement('div');
-        timeCell.className = 'time-cell';
-        timeCell.textContent = h;
-        grid.appendChild(timeCell);
-
-        for (let day = 0; day < 7; day++) {
-          const slot = document.createElement('div');
-          slot.className = 'slot';
-          slot.dataset.week = weekKey;
-          slot.dataset.day = day;
-          slot.dataset.hour = hIndex;
-
-          slot.onmouseenter = () => { hoveredSlot = slot; };
-          slot.onmouseleave = () => { if (hoveredSlot === slot) hoveredSlot = null; };
-
-          slot.onclick = (e) => { 
-            if(drawMode === 'none' && !e.target.classList.contains('course-card')) {
-              openModal(slot); 
-            }
-          };
-
-          slot.ondragover = (e) => {
-            e.preventDefault();
-            slot.classList.add('drag-over');
-          };
-
-          slot.ondragleave = () => {
-            slot.classList.remove('drag-over');
-          };
-
-          slot.ondrop = (e) => {
-            e.preventDefault();
-            slot.classList.remove('drag-over');
-            if (draggedCardData) {
-              // En cas de chevauchement, retour silencieux à la position d'origine
-              if (checkOverlap(slot, draggedCardData.duration, draggedCardData.sourceSlot)) {
-                draggedCardData = null;
-                return;
-              }
-              if (draggedCardData.sourceSlot) {
-                draggedCardData.sourceSlot.textContent = '';
-              }
-              slot.textContent = '';
-              addCardToSlot(
-                slot, 
-                draggedCardData.title, 
-                draggedCardData.type, 
-                draggedCardData.loc, 
-                draggedCardData.duration
-              );
-              saveAllWeeksData();
-              resizeCanvas();
-              draggedCardData = null;
-            }
-          };
-
-          grid.appendChild(slot);
-        }
-      });
-
-      weekBlock.appendChild(grid);
-      weeksWrapper.appendChild(weekBlock);
-    }
-
-    function checkOverlap(targetSlot, duration, sourceSlot = null) {
-      const wKey = targetSlot.dataset.week;
-      const day = targetSlot.dataset.day;
-      const startHour = parseInt(targetSlot.dataset.hour);
-
-      for (let h = startHour; h < startHour + duration; h++) {
-        if (h >= hours.length) return true;
-        const checkSlot = document.querySelector(`.slot[data-week="${wKey}"][data-day="${day}"][data-hour="${h}"]`);
-        if (checkSlot && checkSlot !== sourceSlot && checkSlot.querySelector('.course-card')) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    window.addEventListener('keydown', (e) => {
-      const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA')) {
-        return; 
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-        if (hoveredSlot) {
-          const card = hoveredSlot.querySelector('.course-card');
-          if (card) {
-            copiedCourseBuffer = {
-              title: card.dataset.title,
-              type: card.dataset.type,
-              loc: card.dataset.loc,
-              duration: parseInt(card.dataset.duration)
-            };
-          }
-        }
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-        if (hoveredSlot && copiedCourseBuffer) {
-          if (checkOverlap(hoveredSlot, copiedCourseBuffer.duration)) {
-            return; // Annulation silencieuse
-          }
-          hoveredSlot.textContent = '';
-          addCardToSlot(
-            hoveredSlot,
-            copiedCourseBuffer.title,
-            copiedCourseBuffer.type,
-            copiedCourseBuffer.loc,
-            copiedCourseBuffer.duration
-          );
-          saveAllWeeksData();
-          resizeCanvas();
-        }
-      }
-    });
-
-    const canvas = document.getElementById('drawingCanvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('scrollContainer');
-
-    let drawMode = 'none';
-    let isDrawing = false;
-    let startX = 0, startY = 0;
-
-    function resizeCanvas() {
-      canvas.width = container.scrollWidth;
-      canvas.height = container.scrollHeight;
-      redrawVectorCanvas();
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-
-    function setMode(mode) {
-      if (drawMode === mode) {
-        drawMode = 'none';
-        document.getElementById('btnPencil').classList.remove('btn-active');
-        document.getElementById('btnArrow').classList.remove('btn-active');
-        document.getElementById('btnEraser').classList.remove('btn-active');
-        canvas.classList.remove('active');
+    try {
+      if (isSignUpMode) {
+        await createUserWithEmailAndPassword(auth, email, password);
       } else {
-        resizeCanvas();
-        drawMode = mode;
-        document.getElementById('btnPencil').classList.toggle('btn-active', mode === 'draw');
-        document.getElementById('btnArrow').classList.toggle('btn-active', mode === 'arrow');
-        document.getElementById('btnEraser').classList.toggle('btn-active', mode === 'eraser');
-        canvas.classList.add('active');
+        await signInWithEmailAndPassword(auth, email, password);
       }
+    } catch (error) {
+      errorEl.innerText = "Erreur : " + error.message;
     }
+  };
 
-    function getCanvasCoords(e) {
-      const rect = container.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  // Déconnexion
+  window.logout = function() {
+    signOut(auth);
+  };
+
+  // Écouteur d'état de connexion (s'exécute quand l'utilisateur se connecte/déconnecte)
+  onAuthStateChanged(auth, async (user) => {
+    const authSec = document.getElementById('auth-section');
+    const appSec = document.getElementById('app-section');
+
+    if (user) {
+      currentUser = user;
+      authSec.classList.remove('active');
+      appSec.classList.add('active');
+      document.getElementById('welcome-msg').innerText = "Emploi du temps (" + user.email + ")";
       
-      return {
-        x: clientX - rect.left + container.scrollLeft,
-        y: clientY - rect.top + container.scrollTop
-      };
+      // Charger les données de cet utilisateur précis
+      loadData(user.uid);
+    } else {
+      currentUser = null;
+      appSec.classList.remove('active');
+      authSec.classList.add('active');
     }
+  });
 
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('touchstart', startDrawing, {passive: false});
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchmove', draw, {passive: false});
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('touchend', stopDrawing);
+  // Sauvegarder les données dans Firestore
+  window.saveData = async function() {
+    if (!currentUser) return;
+    const data = document.getElementById('schedule-data').value;
+    const statusEl = document.getElementById('save-status');
 
-    function startDrawing(e) {
-      if (drawMode === 'none') return;
-      e.preventDefault();
-      isDrawing = true;
-      const coords = getCanvasCoords(e);
-      startX = coords.x;
-      startY = coords.y;
-
-      if (!weekDrawings[currentVisibleWeek]) {
-        weekDrawings[currentVisibleWeek] = [];
-      }
-
-      if (drawMode === 'draw') {
-        currentPath = { type: 'draw', points: [{x: startX, y: startY}] };
-      } else if (drawMode === 'arrow') {
-        currentPath = { type: 'arrow', from: {x: startX, y: startY}, to: {x: startX, y: startY} };
-      } else if (drawMode === 'eraser') {
-        eraseVectorAt(coords.x, coords.y);
-      }
-    }
-
-    function draw(e) {
-      if (!isDrawing || drawMode === 'none') return;
-      e.preventDefault();
-      const coords = getCanvasCoords(e);
-
-      if (drawMode === 'draw') {
-        currentPath.points.push({x: coords.x, y: coords.y});
-        redrawVectorCanvas();
-        drawSingleItem(currentPath);
-      } else if (drawMode === 'arrow') {
-        currentPath.to = {x: coords.x, y: coords.y};
-        redrawVectorCanvas();
-        drawSingleItem(currentPath);
-      } else if (drawMode === 'eraser') {
-        eraseVectorAt(coords.x, coords.y);
-      }
-    }
-
-    function eraseVectorAt(x, y) {
-      const items = weekDrawings[currentVisibleWeek] || [];
-      const radius = 20;
-      weekDrawings[currentVisibleWeek] = items.filter(item => {
-        if (item.type === 'draw') {
-          return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
-        } else if (item.type === 'arrow') {
-          return Math.hypot(item.from.x - x, item.from.y - y) >= radius &&
-                 Math.hypot(item.to.x - x, item.to.y - y) >= radius;
-        }
-        return true;
+    try {
+      await setDoc(doc(db, "users", currentUser.uid), {
+        content: data,
+        updatedAt: new Date()
       });
-      redrawVectorCanvas();
+      statusEl.innerText = "Modifications enregistrées avec succès !";
+      setTimeout(() => statusEl.innerText = "", 3000);
+    } catch (e) {
+      alert("Erreur de sauvegarde : " + e.message);
     }
+  };
 
-    function stopDrawing() {
-      if (isDrawing) {
-        isDrawing = false;
-        if (currentPath && drawMode !== 'eraser') {
-          weekDrawings[currentVisibleWeek].push(currentPath);
-        }
-        currentPath = null;
-        saveVectorData();
-      }
+  // Charger les données depuis Firestore
+  async function loadData(uid) {
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      document.getElementById('schedule-data').value = docSnap.data().content || "";
+    } else {
+      document.getElementById('schedule-data').value = "";
     }
+  }
+</script>
 
-    function redrawVectorCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const items = weekDrawings[currentVisibleWeek] || [];
-      items.forEach(drawSingleItem);
-    }
-
-    function drawSingleItem(item) {
-      if (item.type === 'draw') {
-        if (item.points.length < 2) return;
-        ctx.strokeStyle = '#dc3545';
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(item.points[0].x, item.points[0].y);
-        for (let i = 1; i < item.points.length; i++) {
-          ctx.lineTo(item.points[i].x, item.points[i].y);
-        }
-        ctx.stroke();
-      } else if (item.type === 'arrow') {
-        drawArrow(item.from.x, item.from.y, item.to.x, item.to.y);
-      }
-    }
-
-    function drawArrow(fromX, fromY, toX, toY) {
-      const headLength = 18;
-      const angle = Math.atan2(toY - fromY, toX - fromX);
-
-      ctx.strokeStyle = '#000000';
-      ctx.fillStyle = '#000000';
-      ctx.lineWidth = 5;
-
-      ctx.beginPath();
-      ctx.moveTo(fromX, fromY);
-      ctx.lineTo(toX, toY);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(toX, toY);
-      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
-      ctx.fill();
-    }
-
-    function clearCanvas() {
-      if (confirm('Effacer les annotations de cette semaine ?')) {
-        weekDrawings[currentVisibleWeek] = [];
-        redrawVectorCanvas();
-        saveVectorData();
-      }
-    }
-
-    function saveVectorData() {
-      localStorage.setItem('timetable_drawings_vector', JSON.stringify(weekDrawings));
-    }
-
-    function loadVectorData() {
-      const saved = localStorage.getItem('timetable_drawings_vector');
-      weekDrawings = saved ? JSON.parse(saved) : {};
-      redrawVectorCanvas();
-    }
-
-    window.onload = () => {
-      loadAllWeeksData();
-      loadVectorData();
-      updateLocationsDatalist();
-
-      const targetWeek = getCurrentWeekKey();
-      weekSelect.value = targetWeek;
-      setTimeout(() => {
-        scrollToSelectedWeek();
-        resizeCanvas();
-      }, 150);
-
-      container.addEventListener('scroll', () => {
-        for (let w = 1; w <= 14; w++) {
-          const block = document.getElementById(`week-block-S${w}`);
-          const rect = block.getBoundingClientRect();
-          if (rect.top <= 150 && rect.bottom >= 150) {
-            if (currentVisibleWeek !== `S${w}`) {
-              currentVisibleWeek = `S${w}`;
-              weekSelect.value = currentVisibleWeek;
-              redrawVectorCanvas();
-            }
-            break;
-          }
-        }
-      });
-    };
-
-    function scrollToSelectedWeek() {
-      const selected = weekSelect.value;
-      const targetBlock = document.getElementById(`week-block-${selected}`);
-      if (targetBlock) targetBlock.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function getAllWeeksData() {
-      const saved = localStorage.getItem('timetable_multi_weeks');
-      return saved ? JSON.parse(saved) : {};
-    }
-
-    function saveAllWeeksData() {
-      const allData = {};
-      document.querySelectorAll('.slot').forEach(slot => {
-        const card = slot.querySelector('.course-card');
-        if (card) {
-          const wKey = slot.dataset.week;
-          if (!allData[wKey]) allData[wKey] = [];
-          allData[wKey].push({
-            day: slot.dataset.day,
-            hour: slot.dataset.hour,
-            duration: card.dataset.duration || 2,
-            title: card.dataset.title,
-            type: card.dataset.type,
-            loc: card.dataset.loc
-          });
-        }
-      });
-      localStorage.setItem('timetable_multi_weeks', JSON.stringify(allData));
-    }
-
-    function loadAllWeeksData() {
-      document.querySelectorAll('.slot').forEach(s => s.textContent = '');
-      const allData = getAllWeeksData();
-      Object.keys(allData).forEach(wKey => {
-        (allData[wKey] || []).forEach(item => {
-          const slot = document.querySelector(`.slot[data-week="${wKey}"][data-day="${item.day}"][data-hour="${item.hour}"]`);
-          if (slot) addCardToSlot(slot, item.title, item.type, item.loc, parseInt(item.duration));
-        });
-      });
-    }
-
-    function openModal(slot) {
-      selectedSlot = slot;
-      const parentCard = slot.querySelector('.course-card');
-      
-      const btnCopy = document.getElementById('btnModalCopy');
-      const btnPaste = document.getElementById('btnModalPaste');
-
-      if (parentCard) {
-        document.getElementById('courseSearch').value = parentCard.dataset.title || '';
-        document.getElementById('courseType').value = parentCard.dataset.type || 'theorie';
-        document.getElementById('courseLocation').value = parentCard.dataset.loc || '';
-        document.getElementById('courseDuration').value = parentCard.dataset.duration || '2';
-        btnCopy.style.display = 'inline-block';
-        btnPaste.style.display = 'none';
-      } else {
-        document.getElementById('courseSearch').value = '';
-        document.getElementById('courseType').value = 'theorie';
-        document.getElementById('courseLocation').value = '';
-        document.getElementById('courseDuration').value = '2';
-        btnCopy.style.display = 'none';
-        btnPaste.style.display = copiedCourseBuffer ? 'inline-block' : 'none';
-      }
-      handleTypeChange();
-      document.getElementById('courseModal').style.display = 'flex';
-    }
-
-    function copyCurrentCourseModal() {
-      if (!selectedSlot) return;
-      const parentCard = selectedSlot.querySelector('.course-card');
-      if (parentCard) {
-        copiedCourseBuffer = {
-          title: parentCard.dataset.title,
-          type: parentCard.dataset.type,
-          loc: parentCard.dataset.loc,
-          duration: parseInt(parentCard.dataset.duration)
-        };
-      }
-      closeModal();
-    }
-
-    function pasteCourseModal() {
-      if (!selectedSlot || !copiedCourseBuffer) return;
-      if (checkOverlap(selectedSlot, copiedCourseBuffer.duration)) {
-        return; // Annulation silencieuse
-      }
-      selectedSlot.textContent = '';
-      addCardToSlot(
-        selectedSlot,
-        copiedCourseBuffer.title,
-        copiedCourseBuffer.type,
-        copiedCourseBuffer.loc,
-        copiedCourseBuffer.duration
-      );
-      saveAllWeeksData();
-      closeModal();
-      resizeCanvas();
-    }
-
-    function closeModal() { document.getElementById('courseModal').style.display = 'none'; }
-
-    function saveCourse() {
-      if (!selectedSlot) return;
-      const title = document.getElementById('courseSearch').value;
-      const type = document.getElementById('courseType').value;
-      const loc = document.getElementById('courseLocation').value;
-      const duration = parseInt(document.getElementById('courseDuration').value);
-
-      if (title.trim() !== '' && checkOverlap(selectedSlot, duration, selectedSlot)) {
-        return; // Annulation silencieuse
-      }
-
-      saveLocation(loc);
-      selectedSlot.textContent = '';
-      if (title.trim() !== '') addCardToSlot(selectedSlot, title, type, loc, duration);
-      saveAllWeeksData();
-      closeModal();
-      resizeCanvas();
-    }
-
-    function deleteCourse() {
-      if (selectedSlot) selectedSlot.textContent = '';
-      saveAllWeeksData();
-      closeModal();
-      resizeCanvas();
-    }
-
-    function addCardToSlot(slot, title, type, loc, duration = 2) {
-      const card = document.createElement('div');
-      card.className = `course-card ${type}`;
-      card.dataset.title = title;
-      card.dataset.type = type;
-      card.dataset.loc = loc;
-      card.dataset.duration = duration;
-      card.style.height = `${(duration * 70) - 4}px`;
-      card.draggable = true;
-
-      const courseCode = title.split(' - ')[0].trim();
-      const courseFullName = courseDescriptions[courseCode] || '';
-
-      const divHeader = document.createElement('div');
-      divHeader.className = 'header-title';
-      divHeader.textContent = title;
-      card.appendChild(divHeader);
-
-      if (courseFullName) {
-        const divName = document.createElement('div');
-        divName.className = 'course-name';
-        divName.textContent = courseFullName;
-        card.appendChild(divName);
-      }
-
-      if (loc) {
-        const divLoc = document.createElement('div');
-        divLoc.className = 'location';
-        divLoc.textContent = loc;
-        card.appendChild(divLoc);
-      }
-
-      card.onclick = (e) => {
-        e.stopPropagation();
-        if (drawMode === 'none') {
-          openModal(slot);
-        }
-      };
-
-      card.ondragstart = (e) => {
-        draggedCardData = {
-          title: card.dataset.title,
-          type: card.dataset.type,
-          loc: card.dataset.loc,
-          duration: parseInt(card.dataset.duration),
-          sourceSlot: slot
-        };
-        e.dataTransfer.effectAllowed = 'move';
-      };
-
-      card.ontouchstart = (e) => {
-        if (drawMode !== 'none') return;
-        draggedCardData = {
-          title: card.dataset.title,
-          type: card.dataset.type,
-          loc: card.dataset.loc,
-          duration: parseInt(card.dataset.duration),
-          sourceSlot: slot
-        };
-      };
-
-      card.ontouchend = (e) => {
-        if (!draggedCardData) return;
-        const touch = e.changedTouches[0];
-        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-        const targetSlot = targetEl ? targetEl.closest('.slot') : null;
-
-        if (targetSlot) {
-          // Si chevauchement, rien ne se passe et la carte reste à sa place d'origine
-          if (!checkOverlap(targetSlot, draggedCardData.duration, draggedCardData.sourceSlot)) {
-            if (draggedCardData.sourceSlot) draggedCardData.sourceSlot.textContent = '';
-            targetSlot.textContent = '';
-            addCardToSlot(targetSlot, draggedCardData.title, draggedCardData.type, draggedCardData.loc, draggedCardData.duration);
-            saveAllWeeksData();
-            resizeCanvas();
-          }
-        }
-        draggedCardData = null;
-      };
-
-      slot.appendChild(card);
-    }
-
-    function copyPreviousWeek() {
-      const currentWeekNum = parseInt(currentVisibleWeek.replace('S', ''));
-      if (currentWeekNum <= 1) return alert("Pas de semaine précédente avant la S1 !");
-      const prevWeekKey = `S${currentWeekNum - 1}`;
-      const allData = getAllWeeksData();
-      if (confirm(`Copier la ${prevWeekKey} dans la ${currentVisibleWeek} ?`)) {
-        allData[currentVisibleWeek] = JSON.parse(JSON.stringify(allData[prevWeekKey] || []));
-        localStorage.setItem('timetable_multi_weeks', JSON.stringify(allData));
-        loadAllWeeksData();
-        resizeCanvas();
-      }
-    }
-
-    function clearCurrentWeek() {
-      if (confirm(`Effacer l'emploi du temps de la semaine ${currentVisibleWeek} ?`)) {
-        document.querySelectorAll(`.slot[data-week="${currentVisibleWeek}"]`).forEach(s => s.textContent = '');
-        saveAllWeeksData();
-        resizeCanvas();
-      }
-    }
-
-    function exportData() {
-      const payload = {
-        weeks: getAllWeeksData(),
-        drawings: weekDrawings,
-        locations: getStoredLocations()
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `emploi_du_temps_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-    }
-
-    function importData(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target.result);
-          if (data.weeks) localStorage.setItem('timetable_multi_weeks', JSON.stringify(data.weeks));
-          if (data.drawings) localStorage.setItem('timetable_drawings_vector', JSON.stringify(data.drawings));
-          if (data.locations) localStorage.setItem('timetable_saved_locations', JSON.stringify(data.locations));
-          loadAllWeeksData();
-          loadVectorData();
-          updateLocationsDatalist();
-          alert("Données importées avec succès !");
-        } catch (err) {
-          alert("Fichier JSON invalide.");
-        }
-      };
-      reader.readAsText(file);
-    }
-  </script>
 </body>
 </html>
