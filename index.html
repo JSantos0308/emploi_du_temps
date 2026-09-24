@@ -11,7 +11,7 @@
       --bg-exercices: #98d380;
       --bg-etude: #ff9999;
       --border-color: #cccccc;
-      /* Hauteur dynamique optimisée pour faire tenir 08:00 à 19:00 (12 créneaux) sans scroll */
+      /* Hauteur dynamique optimisée pour faire tenir 08:00 à 19:00 (12 créneaux) */
       --row-height: calc((100vh - 72px) / 12);
     }
 
@@ -24,7 +24,7 @@
       padding: 0;
       font-family: Arial, sans-serif;
       background-color: #ffffff;
-      overflow: hidden; /* Supprime le scroll global */
+      overflow: hidden;
     }
 
     /* AUTHENTIFICATION */
@@ -134,7 +134,18 @@
       cursor: crosshair;
     }
 
-    /* EN-TÊTE DES JOURS (REDUIT ET BLANC) */
+    /* BLOC SEMAINE ET ESPACEMENT BLEU REMPLACÉ PAR UN ESPACE BLANC */
+    .week-block {
+      margin-bottom: 20px;
+    }
+
+    .week-divider {
+      height: 45px;
+      background-color: #ffffff;
+      border: none;
+    }
+
+    /* EN-TÊTE PROPRE À CHAQUE SEMAINE (BLANC AVEC TEXTE NOIR) */
     .header-row {
       display: grid;
       grid-template-columns: 55px repeat(7, 1fr);
@@ -143,8 +154,9 @@
       z-index: 10;
       background-color: #ffffff;
       color: #111111;
-      height: 20px;
+      height: 22px;
       border-bottom: 2px solid #cccccc;
+      border-top: 1px solid #e0e0e0;
     }
 
     .header-cell {
@@ -154,20 +166,6 @@
       align-items: center;
       justify-content: center;
       font-size: 11px;
-    }
-
-    .week-divider {
-      background-color: #007bff;
-      color: white;
-      font-weight: bold;
-      padding: 2px 8px;
-      font-size: 11px;
-      position: sticky;
-      top: 20px;
-      z-index: 9;
-      height: 20px;
-      display: flex;
-      align-items: center;
     }
 
     .timetable-body {
@@ -299,18 +297,6 @@
 
   <div class="timetable-container" id="scrollContainer">
     <canvas id="drawingCanvas"></canvas>
-
-    <div class="header-row">
-      <div class="header-cell">Heure</div>
-      <div class="header-cell">Lundi</div>
-      <div class="header-cell">Mardi</div>
-      <div class="header-cell">Mercredi</div>
-      <div class="header-cell">Jeudi</div>
-      <div class="header-cell">Vendredi</div>
-      <div class="header-cell">Samedi</div>
-      <div class="header-cell">Dimanche</div>
-    </div>
-
     <div id="weeksWrapper"></div>
   </div>
 
@@ -523,6 +509,7 @@
       return `S${weekNum}`;
     }
 
+    // CONSTRUCTION DE LA GRILLE DES 14 SEMAINES
     for (let w = 1; w <= 14; w++) {
       const weekKey = `S${w}`;
       const mon = getMondayOfWeek(w);
@@ -535,14 +522,44 @@
 
       const weekBlock = document.createElement('div');
       weekBlock.id = `week-block-${weekKey}`;
+      weekBlock.className = 'week-block';
 
-      const divider = document.createElement('div');
-      divider.className = 'week-divider';
-      const divSpan = document.createElement('span');
-      divSpan.textContent = `📅 SEMAINE ${w} (${formatDateShort(mon)} au ${formatDateShort(sun)})`;
-      divider.appendChild(divSpan);
-      weekBlock.appendChild(divider);
+      // 1. Espace vide séparateur (sauf avant la 1ère semaine)
+      if (w > 1) {
+        const divider = document.createElement('div');
+        divider.className = 'week-divider';
+        weekBlock.appendChild(divider);
+      }
 
+      // 2. En-tête propre à la semaine avec dates (jj/mm/yy) et case semaine "Sx"
+      const headerRow = document.createElement('div');
+      headerRow.className = 'header-row';
+
+      const daysNames = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+      const cornerCell = document.createElement('div');
+      cornerCell.className = 'header-cell';
+      cornerCell.textContent = weekKey;
+      headerRow.appendChild(cornerCell);
+
+      for (let d = 0; d < 7; d++) {
+        const currentDayDate = new Date(mon);
+        currentDayDate.setDate(mon.getDate() + d);
+
+        const dayCell = document.createElement('div');
+        dayCell.className = 'header-cell';
+
+        const dd = String(currentDayDate.getDate()).padStart(2, '0');
+        const mm = String(currentDayDate.getMonth() + 1).padStart(2, '0');
+        const yy = String(currentDayDate.getFullYear()).slice(-2);
+
+        dayCell.textContent = `${daysNames[d]} ${dd}/${mm}/${yy}`;
+        headerRow.appendChild(dayCell);
+      }
+
+      weekBlock.appendChild(headerRow);
+
+      // 3. Grille horaire
       const grid = document.createElement('div');
       grid.className = 'timetable-body';
 
