@@ -53,16 +53,16 @@
     .auth-card button:hover { background: #0056b3; }
     .switch-mode { text-align: center; color: #007bff; cursor: pointer; font-size: 13px; text-decoration: underline; margin-top: 5px; }
 
-    /* CONTROLES */
+    /* BARRE DE CONTROLE STYLE IMAGE 1 */
     .controls-box {
-      background: white;
-      padding: 8px 15px;
+      background: #343a40;
+      padding: 10px 15px;
       width: 100%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 10px;
       z-index: 20;
       position: relative;
@@ -74,35 +74,45 @@
       gap: 8px;
     }
 
-    .controls-box select, .btn-action {
+    .controls-box select {
       padding: 6px 12px;
       font-size: 14px;
       font-weight: bold;
       border-radius: 4px;
       border: 1px solid #ccc;
+      background: white;
+      color: #333;
     }
 
     .btn-action {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 4px;
       border: none;
       cursor: pointer;
       color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
+    /* COULEURS DES BOUTONS IMAGE 1 */
     .btn-draw { background: #6f42c1; }
-    .btn-arrow { background: #212529; }
+    .btn-arrow { background: #17a2b8; }
     .btn-eraser { background: #ffc107; color: #111; }
     .btn-clear-draw { background: #6c757d; }
-    .btn-copy { background: #0275d8; }
+    .btn-copy { background: #007bff; }
     .btn-clear { background: #dc3545; }
-    .btn-export { background: #17a2b8; }
-    .btn-import { background: #fd7e14; }
+    .btn-export { background: #20c997; }
+    .btn-import { background: #17a2b8; }
     .btn-save-cloud { background: #28a745; }
-    .btn-logout { background: #dc3545; }
-    .btn-active { outline: 3px solid #111; }
+    .btn-logout { background: #6c757d; }
+    .btn-active { outline: 2px solid white; box-shadow: 0 0 5px rgba(255,255,255,0.8); }
 
     .timetable-container {
       width: 100vw;
-      height: calc(100vh - 50px);
+      height: calc(100vh - 54px);
       overflow-y: auto;
       background-color: white;
       position: relative;
@@ -127,7 +137,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background-color: #343a40;
+      background-color: #212529;
       color: white;
       border-bottom: 2px solid var(--border-color);
     }
@@ -143,7 +153,7 @@
     }
 
     .week-divider {
-      background-color: #0275d8;
+      background-color: #007bff;
       color: white;
       font-weight: bold;
       padding: 8px 15px;
@@ -151,8 +161,8 @@
       position: sticky;
       top: 39px;
       z-index: 9;
-      border-top: 2px solid #0056b3;
-      border-bottom: 2px solid #0056b3;
+      border-top: 1px solid #0056b3;
+      border-bottom: 1px solid #0056b3;
     }
 
     .timetable-body {
@@ -175,7 +185,7 @@
     }
 
     .slot { position: relative; cursor: pointer; touch-action: none; }
-    .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #0275d8; }
+    .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #007bff; }
     .slot:hover { background-color: #f0f0f0; }
 
     .course-card {
@@ -255,7 +265,7 @@
     </div>
   </div>
 
-  <!-- BARRE DE CONTROLE -->
+  <!-- BARRE DE CONTROLE DESSINEE COMME L'IMAGE 1 -->
   <div class="controls-box">
     <div class="controls-group">
       <select id="selectWeek" onchange="scrollToSelectedWeek()"></select>
@@ -264,18 +274,18 @@
     <div class="controls-group">
       <button id="btnPencil" class="btn-action btn-draw" onclick="setMode('draw')">✏️ Crayon</button>
       <button id="btnArrow" class="btn-action btn-arrow" onclick="setMode('arrow')">↗️ Flèche</button>
-      <button id="btnEraser" class="btn-action btn-eraser" onclick="setMode('eraser')">🧹 Gomme</button>
+      <button id="btnEraser" class="btn-action btn-eraser" onclick="setMode('eraser')">✏️ Gomme</button>
       <button class="btn-action btn-clear-draw" onclick="clearCanvas()">🧼 Tout Effacer</button>
     </div>
 
     <div class="controls-group">
       <button class="btn-action btn-copy" onclick="copyPreviousWeek()">📋 Copier S. Précédente</button>
       <button class="btn-action btn-clear" onclick="clearCurrentWeek()">🗑️ Effacer S. Visible</button>
-      <button class="btn-action btn-export" onclick="exportData()">📤 Exporter JSON</button>
-      <button class="btn-action btn-import" onclick="document.getElementById('importFile').click()">📥 Importer JSON</button>
+      <button class="btn-action btn-export" onclick="exportData()">💾 Exporter</button>
+      <button class="btn-action btn-import" onclick="document.getElementById('importFile').click()">📂 Importer</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-      <button class="btn-action btn-save-cloud" onclick="saveDataToCloud()">💾 Sauvegarder Cloud</button>
-      <button class="btn-action btn-logout" onclick="logout()">🚪 Déconnexion</button>
+      <button class="btn-action btn-save-cloud" onclick="saveDataToCloud()">☁️ Sauvegarder</button>
+      <button class="btn-action btn-logout" onclick="logout()">🚪</button>
     </div>
   </div>
 
