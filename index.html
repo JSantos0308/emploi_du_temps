@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mon Emploi du Temps XL</title>
   <style>
     :root {
@@ -11,18 +11,20 @@
       --bg-exercices: #98d380;
       --bg-etude: #ff9999;
       --border-color: #cccccc;
+      /* Hauteur dynamique pour faire rentrer exactement 12 lignes (8h à 19h) + barres dans l'écran */
+      --row-height: calc((100vh - 82px) / 12);
     }
 
     * { box-sizing: border-box; }
 
     html, body {
       width: 100%;
-      height: 100%;
+      height: 100vh;
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
       background-color: #f4f6f9;
-      overflow: hidden;
+      overflow: hidden; /* Supprime le scroll global */
     }
 
     /* AUTHENTIFICATION */
@@ -38,63 +40,62 @@
 
     .auth-card {
       background: white;
-      padding: 30px;
-      border-radius: 12px;
+      padding: 24px;
+      border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      width: 350px;
+      width: 320px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .auth-card h2 { margin: 0 0 10px 0; color: #333; text-align: center; }
-    .auth-card input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-    .auth-card button { padding: 10px; border: none; border-radius: 6px; font-weight: bold; background: #007bff; color: white; cursor: pointer; }
-    .auth-card button:hover { background: #0056b3; }
-    .switch-mode { text-align: center; color: #007bff; cursor: pointer; font-size: 13px; text-decoration: underline; margin-top: 5px; }
+    .auth-card h2 { margin: 0 0 8px 0; color: #333; text-align: center; font-size: 18px; }
+    .auth-card input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .auth-card button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; background: #007bff; color: white; cursor: pointer; }
+    .switch-mode { text-align: center; color: #007bff; cursor: pointer; font-size: 12px; text-decoration: underline; }
 
-    /* BARRE DE CONTROLE STYLE IMAGE 1 */
+    /* BARRE DE CONTROLE DU HAUT (COMPACTE) */
     .controls-box {
       background: #343a40;
-      padding: 10px 15px;
+      padding: 4px 10px;
+      height: 38px;
       width: 100%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: nowrap;
-      gap: 10px;
       z-index: 20;
-      position: relative;
     }
 
     .controls-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 5px;
     }
 
     .controls-box select {
-      padding: 6px 12px;
-      font-size: 14px;
+      padding: 2px 6px;
+      font-size: 11px;
       font-weight: bold;
-      border-radius: 4px;
+      border-radius: 3px;
       border: 1px solid #ccc;
       background: white;
       color: #333;
+      height: 26px;
     }
 
     .btn-action {
-      padding: 6px 12px;
-      font-size: 13px;
+      padding: 3px 8px;
+      font-size: 11px;
       font-weight: bold;
-      border-radius: 4px;
+      border-radius: 3px;
       border: none;
       cursor: pointer;
       color: white;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
+      height: 26px;
+      white-space: nowrap;
     }
 
     /* COULEURS DES BOUTONS IMAGE 1 */
@@ -108,11 +109,12 @@
     .btn-import { background: #17a2b8; }
     .btn-save-cloud { background: #28a745; }
     .btn-logout { background: #6c757d; }
-    .btn-active { outline: 2px solid white; box-shadow: 0 0 5px rgba(255,255,255,0.8); }
+    .btn-active { outline: 2px solid white; box-shadow: 0 0 4px rgba(255,255,255,0.8); }
 
+    /* CONTENEUR ET GRILLE */
     .timetable-container {
       width: 100vw;
-      height: calc(100vh - 54px);
+      height: calc(100vh - 38px);
       overflow-y: auto;
       background-color: white;
       position: relative;
@@ -133,13 +135,13 @@
 
     .header-row {
       display: grid;
-      grid-template-columns: 75px repeat(7, 1fr);
+      grid-template-columns: 55px repeat(7, 1fr);
       position: sticky;
       top: 0;
       z-index: 10;
       background-color: #212529;
       color: white;
-      border-bottom: 2px solid var(--border-color);
+      height: 22px;
     }
 
     .header-cell {
@@ -148,27 +150,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-      padding: 10px 2px;
+      font-size: 11px;
     }
 
     .week-divider {
       background-color: #007bff;
       color: white;
       font-weight: bold;
-      padding: 8px 15px;
-      font-size: 14px;
+      padding: 3px 10px;
+      font-size: 11px;
       position: sticky;
-      top: 39px;
+      top: 22px;
       z-index: 9;
-      border-top: 1px solid #0056b3;
-      border-bottom: 1px solid #0056b3;
+      height: 22px;
+      display: flex;
+      align-items: center;
     }
 
     .timetable-body {
       display: grid;
-      grid-template-columns: 75px repeat(7, 1fr);
-      grid-template-rows: repeat(12, 70px);
+      grid-template-columns: 55px repeat(7, 1fr);
+      grid-template-rows: repeat(12, var(--row-height));
     }
 
     .time-cell, .slot {
@@ -178,29 +180,31 @@
 
     .time-cell {
       background-color: #f8f9fa;
-      font-size: 13px;
-      padding: 6px;
+      font-size: 10px;
+      padding: 2px 4px;
       color: #333;
       font-weight: bold;
+      display: flex;
+      align-items: flex-start;
     }
 
     .slot { position: relative; cursor: pointer; touch-action: none; }
     .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #007bff; }
     .slot:hover { background-color: #f0f0f0; }
 
+    /* CARTES DE COURS */
     .course-card {
       position: absolute;
-      top: 2px; left: 2px; right: 2px;
-      border-radius: 4px;
-      padding: 6px 8px;
+      top: 1px; left: 1px; right: 1px;
+      border-radius: 2px;
+      padding: 2px 4px;
       color: #111;
       overflow: hidden;
       border: 1px solid rgba(0,0,0,0.15);
       z-index: 2;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
-      gap: 4px;
+      justify-content: space-between;
       cursor: grab;
       user-select: none;
       touch-action: none;
@@ -212,9 +216,10 @@
     .course-card.labo { background-color: var(--bg-labo); }
     .course-card.etude { background-color: var(--bg-etude); }
 
-    .course-card .header-title { font-weight: bold; font-size: 13px; line-height: 1.2; }
-    .course-card .location { font-size: 12px; font-weight: bold; line-height: 1.2; margin-top: auto; }
+    .course-card .header-title { font-weight: bold; font-size: 10px; line-height: 1.1; }
+    .course-card .location { font-size: 9px; font-weight: bold; line-height: 1.1; }
 
+    /* MODALE */
     .modal {
       display: none;
       position: fixed;
@@ -227,23 +232,23 @@
 
     .modal-content {
       background: white;
-      padding: 20px;
-      border-radius: 8px;
-      width: 340px;
+      padding: 15px;
+      border-radius: 6px;
+      width: 300px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      font-size: 14px;
+      gap: 8px;
+      font-size: 12px;
     }
 
     .modal-content input, .modal-content select {
-      padding: 8px;
-      font-size: 14px;
+      padding: 5px;
+      font-size: 12px;
       border: 1px solid #ccc;
-      border-radius: 4px;
+      border-radius: 3px;
     }
 
-    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: space-between; margin-top: 10px; }
+    .btn-group { display: flex; gap: 4px; flex-wrap: wrap; justify-content: space-between; margin-top: 6px; }
     .btn-save { background: #28a745; color: white; }
     .btn-delete { background: #dc3545; color: white; }
     .btn-cancel { background: #6c757d; color: white; }
@@ -260,12 +265,12 @@
       <input type="email" id="email" placeholder="Adresse e-mail">
       <input type="password" id="password" placeholder="Mot de passe">
       <button id="btnAuth" onclick="handleAuth()">Se connecter</button>
-      <p id="authError" style="color: red; font-size: 12px; text-align: center; margin: 0;"></p>
+      <p id="authError" style="color: red; font-size: 11px; text-align: center; margin: 0;"></p>
       <div class="switch-mode" id="switchText" onclick="toggleAuthMode()">Pas encore de compte ? S'inscrire</div>
     </div>
   </div>
 
-  <!-- BARRE DE CONTROLE DESSINEE COMME L'IMAGE 1 -->
+  <!-- BARRE DE CONTROLE DU HAUT -->
   <div class="controls-box">
     <div class="controls-group">
       <select id="selectWeek" onchange="scrollToSelectedWeek()"></select>
@@ -309,10 +314,10 @@
   <!-- MODALE COURS -->
   <div class="modal" id="courseModal">
     <div class="modal-content">
-      <h3 id="modalTitle">Détails de l'activité</h3>
+      <h3 id="modalTitle" style="margin:0 0 5px 0;">Détails de l'activité</h3>
       
       <label>Nom du cours / Activité :</label>
-      <input type="text" id="courseSearch" placeholder="Ex: Mathématiques, Sport, Révision...">
+      <input type="text" id="courseSearch" placeholder="Ex: Mathématiques, Sport...">
 
       <label>Durée :</label>
       <select id="courseDuration">
@@ -331,7 +336,7 @@
       </select>
 
       <label>Local / Lieu :</label>
-      <input type="text" id="courseLocation" list="locationsList" placeholder="Ex: Salle 101, Bibliothèque...">
+      <input type="text" id="courseLocation" list="locationsList" placeholder="Ex: Auditoire FERRER...">
       <datalist id="locationsList"></datalist>
 
       <div class="btn-group">
@@ -450,7 +455,7 @@
     }
   </script>
 
-  <!-- LOGIQUE DE L'EMPLOI DU TEMPS -->
+  <!-- LOGIQUE EMPLOI DU TEMPS -->
   <script>
     const startDateS1 = new Date(2026, 8, 14);
     const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
@@ -746,7 +751,7 @@
 
     function eraseVectorAt(x, y) {
       const items = weekDrawings[currentVisibleWeek] || [];
-      const radius = 20;
+      const radius = 15;
       weekDrawings[currentVisibleWeek] = items.filter(item => {
         if (item.type === 'draw') {
           return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
@@ -780,7 +785,7 @@
       if (item.type === 'draw') {
         if (item.points.length < 2) return;
         ctx.strokeStyle = '#dc3545';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(item.points[0].x, item.points[0].y);
@@ -794,12 +799,12 @@
     }
 
     function drawArrow(fromX, fromY, toX, toY) {
-      const headLength = 18;
+      const headLength = 12;
       const angle = Math.atan2(toY - fromY, toX - fromX);
 
       ctx.strokeStyle = '#000000';
       ctx.fillStyle = '#000000';
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 3;
 
       ctx.beginPath();
       ctx.moveTo(fromX, fromY);
@@ -848,7 +853,7 @@
           const block = document.getElementById(`week-block-S${w}`);
           if (block) {
             const rect = block.getBoundingClientRect();
-            if (rect.top <= 150 && rect.bottom >= 150) {
+            if (rect.top <= 100 && rect.bottom >= 100) {
               if (currentVisibleWeek !== `S${w}`) {
                 currentVisibleWeek = `S${w}`;
                 weekSelect.value = currentVisibleWeek;
@@ -992,7 +997,9 @@
       card.dataset.type = type;
       card.dataset.loc = loc;
       card.dataset.duration = duration;
-      card.style.height = `${(duration * 70) - 4}px`;
+      
+      /* Calcul dynamique basé sur la hauteur de ligne relative CSS */
+      card.style.height = `calc(var(--row-height) * ${duration} - 2px)`;
       card.draggable = true;
 
       const divHeader = document.createElement('div');
