@@ -39,7 +39,7 @@ body{ display:flex; flex-direction:column; }
 .nav-bar-custom {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-size: 13px;
   font-weight: bold;
   color: #333;
@@ -58,11 +58,11 @@ body{ display:flex; flex-direction:column; }
 .week-switcher {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 2px 4px;
 }
 .btn-week-nav {
   background: none;
@@ -79,23 +79,23 @@ body{ display:flex; flex-direction:column; }
 .date-range-container {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 11px;
 }
-.week-dates-btn {
+.date-picker-btn {
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
   color: #0f5132;
   font-weight: bold;
   font-size: 11px;
-  padding: 3px 6px;
+  padding: 4px 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
-.week-dates-btn:hover { background: #e9ecef; }
+.date-picker-btn:hover { background: #e9ecef; }
 .date-picker-hidden {
   position: absolute;
   opacity: 0;
@@ -221,10 +221,16 @@ body{ display:flex; flex-direction:column; }
         <button id="btnNextWeek" class="btn-week-nav" title="Semaine suivante">&gt;</button>
       </div>
       <div class="date-range-container">
-        <button id="btnStartDate" class="week-dates-btn" title="Choisir la date de début">Début : <span id="startDateText">14/09/2026</span></button>
+        <!-- Bouton 1 : Date de début -->
+        <button id="btnStartDate" class="date-picker-btn" title="Cliquer pour choisir la date de début">
+          📅 Début : <span id="startDateText">14/09/2026</span>
+        </button>
         <input type="date" id="startDatePicker" class="date-picker-hidden">
-        <span>-</span>
-        <button id="btnEndDate" class="week-dates-btn" title="Choisir la date de fin">Fin : <span id="endDateText">20/12/2026</span></button>
+
+        <!-- Bouton 2 : Date de fin -->
+        <button id="btnEndDate" class="date-picker-btn" title="Cliquer pour choisir la date de fin">
+          📅 Fin : <span id="endDateText">20/12/2026</span>
+        </button>
         <input type="date" id="endDatePicker" class="date-picker-hidden">
       </div>
     </div>
@@ -1121,6 +1127,7 @@ onAuthStateChanged(auth, (user) => {
     toast("Affichage filtré de la semaine " + startW + " à la semaine " + endW);
   }
 
+  // Écouteurs pour les 2 boutons séparés
   $('btnStartDate').addEventListener('click', () => {
     $('startDatePicker').showPicker?.() || $('startDatePicker').click();
   });
