@@ -36,7 +36,6 @@ body{ display:flex; flex-direction:column; }
 }
 .controls-group{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 
-/* Style de la barre de navigation type image (Aujourd'hui < s2 > dates) */
 .nav-bar-custom {
   display: flex;
   align-items: center;
@@ -100,16 +99,11 @@ body{ display:flex; flex-direction:column; }
 .save-dot.error{ background:#dc3545; }
 .save-dot.offline{ background:#6c757d; }
 
-.range-bar{
-  display:flex; align-items:center; gap:6px; padding:4px 8px; background:#f8f9fa; border-bottom:1px solid #e0e0e0;
-  font-size:11px; font-weight:bold; color:#333; flex:0 0 auto; flex-wrap:wrap;
-}
-.range-bar select{ font-size:11px; padding:2px 4px; border-radius:3px; border:1px solid #ccc; }
 .viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; }
 
-/* PANNEAU FILTRE (STYLE IMAGE 3) */
+/* PANNEAU FILTRE */
 .filter-panel{
-  position:fixed; top:64px; right:10px; background:#fff; border:1px solid #ccc; border-radius:6px;
+  position:fixed; top:54px; right:10px; background:#fff; border:1px solid #ccc; border-radius:6px;
   box-shadow:0 4px 16px rgba(0,0,0,.2); padding:12px; width:280px; z-index:120; display:none; font-size:12px;
 }
 .filter-panel.open{ display:block; }
@@ -138,7 +132,6 @@ body{ display:flex; flex-direction:column; }
 .now-line::before{ content:""; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#e8590c; }
 
 .week-block{ margin-bottom:20px; }
-.week-block.hidden-range{ display:none; }
 .week-divider{ height:20px; }
 
 .header-row{
@@ -198,7 +191,6 @@ body{ display:flex; flex-direction:column; }
 
 <div class="controls-box">
   <div class="controls-group">
-    <!-- Barre de navigation inspirée de ton image : Aujourd'hui < sX > Dates -->
     <div class="nav-bar-custom">
       <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
       <div class="week-switcher">
@@ -228,14 +220,6 @@ body{ display:flex; flex-direction:column; }
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
     <button id="btnLogout" class="btn-action btn-logout">🚪</button>
   </div>
-</div>
-
-<div class="range-bar">
-  <span>Afficher du</span>
-  <select id="rangeFrom" aria-label="Semaine de début"></select>
-  <span>au</span>
-  <select id="rangeTo" aria-label="Semaine de fin"></select>
-  <button id="btnRangeAll" class="btn-action btn-copy" style="height:20px;">Tout afficher</button>
 </div>
 
 <!-- PANNEAU FILTRE -->
@@ -333,7 +317,6 @@ body{ display:flex; flex-direction:column; }
   </div>
 </div>
 
-<!-- MODALE DE CHOIX DE PARTAGE (LIEN OU PDF) -->
 <div class="modal" id="shareModal" role="dialog" aria-modal="true">
   <div class="modal-content" style="width: 300px;">
     <h3 style="margin:0 0 8px;">Partager l'emploi du temps</h3>
@@ -461,7 +444,7 @@ onAuthStateChanged(auth, (user) => {
   'use strict';
 
   const CONFIG = {
-    startDateS1: new Date(2026, 8, 14), // 14 septembre 2026
+    startDateS1: new Date(2026, 8, 14),
     weeks: 14,
     hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"],
     defaultCatalog: [
@@ -492,7 +475,7 @@ onAuthStateChanged(auth, (user) => {
   const H = CONFIG.hours.length;
   const LS = {
     courses:'timetable_courses_v3', catalog:'timetable_catalog_v3', locations:'timetable_locations_v3',
-    strokes:'timetable_strokes_v3', range:'timetable_range_v3'
+    strokes:'timetable_strokes_v3'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -523,7 +506,6 @@ onAuthStateChanged(auth, (user) => {
   let catalog = [];
   let locations = [];
   let filter = { course: '', type: '' };
-  let range = { from: 1, to: CONFIG.weeks };
   let hovered = null;
   let dragged = null;
   let modalCtx = { editing: null };
@@ -655,7 +637,6 @@ onAuthStateChanged(auth, (user) => {
     return weekKey(n);
   }
 
-  // Met à jour l'affichage de la barre de navigation personnalisée (ex: s2 et les dates)
   function updateNavBarDisplay(wk) {
     const n = weekNum(wk);
     $('currentWeekText').textContent = 's' + n;
@@ -776,39 +757,6 @@ onAuthStateChanged(auth, (user) => {
     refreshFilterOptions();
     renderCards();
     $('filterPanel').classList.remove('open');
-  });
-
-  function fillRangeSelects() {
-    [$('rangeFrom'), $('rangeTo')].forEach((sel) => {
-      for (let w = 1; w <= CONFIG.weeks; w++) {
-        const o = document.createElement('option'); o.value = String(w); o.textContent = 'S' + w; sel.appendChild(o);
-      }
-    });
-    $('rangeFrom').value = String(range.from);
-    $('rangeTo').value = String(range.to);
-  }
-  function applyRange() {
-    for (let w = 1; w <= CONFIG.weeks; w++) {
-      if(blocks[w]) blocks[w].classList.toggle('hidden-range', w < range.from || w > range.to);
-    }
-    writeJSON(LS.range, range);
-    positionNowLine();
-    resizeCanvas();
-  }
-  $('rangeFrom').addEventListener('change', () => {
-    let from = parseInt($('rangeFrom').value, 10);
-    if (from > range.to) { range.to = from; $('rangeTo').value = String(from); }
-    range.from = from; applyRange();
-  });
-  $('rangeTo').addEventListener('change', () => {
-    let to = parseInt($('rangeTo').value, 10);
-    if (to < range.from) { range.from = to; $('rangeFrom').value = String(to); }
-    range.to = to; applyRange();
-  });
-  $('btnRangeAll').addEventListener('click', () => {
-    range = { from: 1, to: CONFIG.weeks };
-    $('rangeFrom').value = '1'; $('rangeTo').value = String(CONFIG.weeks);
-    applyRange();
   });
 
   function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').style.display === 'flex'; }
@@ -953,13 +901,12 @@ onAuthStateChanged(auth, (user) => {
     ctx.setTransform(dpr,0,0,dpr,0,0);
     redraw();
   }
-  function weekVisible(n) { return n >= range.from && n <= range.to; }
+  function weekVisible() { return true; }
   function contentPts(s) {
     const n = weekNum(s.w); const top = blocks[n].offsetTop;
     return s.pts.map((p) => [p[0]*cssW, p[1] + top]);
   }
   function drawStroke(s) {
-    const n = weekNum(s.w); if (!weekVisible(n)) return;
     const pts = contentPts(s);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.strokeStyle = s.color || '#dc3545';
@@ -994,7 +941,7 @@ onAuthStateChanged(auth, (user) => {
 
   function pointerPos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function weekAtY(y) {
-    for (let w = range.from; w <= range.to; w++) {
+    for (let w = 1; w <= CONFIG.weeks; w++) {
       const b = blocks[w];
       if (b && y >= b.offsetTop && y < b.offsetTop + b.offsetHeight) return { key: weekKey(w), top: b.offsetTop };
     }
@@ -1043,7 +990,6 @@ onAuthStateChanged(auth, (user) => {
   function positionNowLine() {
     if (nowLineEl) { nowLineEl.remove(); nowLineEl = null; }
     const wk = getCurrentWeekKey(); const n = weekNum(wk);
-    if (!weekVisible(n)) return;
     const now = new Date();
     const startMinutes = 8*60, endMinutes = 20*60, curMinutes = now.getHours()*60+now.getMinutes();
     if (curMinutes < startMinutes || curMinutes >= endMinutes) return;
@@ -1079,7 +1025,6 @@ onAuthStateChanged(auth, (user) => {
   $('btnCopyPrev').addEventListener('click', copyPreviousWeek);
   $('btnClearWeek').addEventListener('click', clearCurrentWeek);
 
-  // Navigation de semaine par les flèches < sX > et Aujourd'hui
   function goToWeek(wk) {
     currentVisibleWeek = wk;
     updateNavBarDisplay(wk);
@@ -1107,7 +1052,7 @@ onAuthStateChanged(auth, (user) => {
 
   function onScroll() {
     const probe = container.getBoundingClientRect().top + 150;
-    for (let w = range.from; w <= range.to; w++) {
+    for (let w = 1; w <= CONFIG.weeks; w++) {
       const r = blocks[w].getBoundingClientRect();
       if (r.top <= probe && r.bottom >= probe) { 
         currentVisibleWeek = weekKey(w); 
@@ -1280,9 +1225,7 @@ onAuthStateChanged(auth, (user) => {
     toast('Génération du PDF en cours...');
     
     const toolbar = document.querySelector('.controls-box');
-    const rangeBar = document.querySelector('.range-bar');
     toolbar.style.display = 'none';
-    rangeBar.style.display = 'none';
 
     const element = document.getElementById('weeksWrapper');
     const opt = {
@@ -1295,11 +1238,9 @@ onAuthStateChanged(auth, (user) => {
 
     html2pdf().from(element).set(opt).save().then(() => {
       toolbar.style.display = 'flex';
-      rangeBar.style.display = 'flex';
       toast('PDF téléchargé avec succès !');
     }).catch(() => {
       toolbar.style.display = 'flex';
-      rangeBar.style.display = 'flex';
       toast('Erreur lors de la génération du PDF.');
     });
   });
@@ -1332,9 +1273,6 @@ onAuthStateChanged(auth, (user) => {
   }
 
   buildWeeks();
-  range = readJSON(LS.range, { from:1, to:CONFIG.weeks });
-  if (!(range.from>=1 && range.to<=CONFIG.weeks && range.from<=range.to)) range = { from:1, to:CONFIG.weeks };
-  fillRangeSelects();
 
   courses = normalizeCourses(readJSON(LS.courses, {}));
   strokes = normalizeStrokes(readJSON(LS.strokes, []));
@@ -1350,7 +1288,6 @@ onAuthStateChanged(auth, (user) => {
 
   window.addEventListener('load', () => {
     const shared = tryEnterShareView();
-    applyRange();
     if (!shared) {
       const targetWeek = getCurrentWeekKey();
       currentVisibleWeek = targetWeek; 
