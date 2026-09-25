@@ -99,7 +99,6 @@
     }
 
     .btn-draw { background: #6f42c1; }
-    .btn-arrow { background: #17a2b8; }
     .btn-eraser { background: #ffc107; color: #111; }
     .btn-clear-draw { background: #6c757d; }
     .btn-copy { background: #007bff; }
@@ -278,14 +277,13 @@
 
     <div class="controls-group">
       <button id="btnPencil" class="btn-action btn-draw" onclick="setMode('draw')">✏️ Crayon</button>
-      <button id="btnArrow" class="btn-action btn-arrow" onclick="setMode('arrow')">↗️ Flèche</button>
-      <button id="btnEraser" class="btn-action btn-eraser" onclick="setMode('eraser')">✏️ Gomme</button>
+      <button id="btnEraser" class="btn-action btn-eraser" onclick="setMode('eraser')">🧹 Gomme</button>
       <button class="btn-action btn-clear-draw" onclick="clearCanvas()">🧼 Tout Effacer</button>
     </div>
 
     <div class="controls-group">
-      <button class="btn-action btn-config" onclick="openConfigModal('courses')">⚙️ Gérer Cours</button>
-      <button class="btn-action btn-config" onclick="openConfigModal('locations')">⚙️ Gérer Locaux</button>
+      <button class="btn-action btn-config" onclick="openConfigModal('courses')">⚙️ Cours</button>
+      <button class="btn-action btn-config" onclick="openConfigModal('locations')">⚙️ Locaux</button>
       <button class="btn-action btn-copy" onclick="copyPreviousWeek()">📋 Copier Préc.</button>
       <button class="btn-action btn-clear" onclick="clearCurrentWeek()">🗑️ Effacer Semaine</button>
       <button class="btn-action btn-export" onclick="exportData()">💾 Exporter</button>
@@ -792,14 +790,12 @@
       if (drawMode === mode) {
         drawMode = 'none';
         document.getElementById('btnPencil').classList.remove('btn-active');
-        document.getElementById('btnArrow').classList.remove('btn-active');
         document.getElementById('btnEraser').classList.remove('btn-active');
         canvas.classList.remove('active');
       } else {
         resizeCanvas();
         drawMode = mode;
         document.getElementById('btnPencil').classList.toggle('btn-active', mode === 'draw');
-        document.getElementById('btnArrow').classList.toggle('btn-active', mode === 'arrow');
         document.getElementById('btnEraser').classList.toggle('btn-active', mode === 'eraser');
         canvas.classList.add('active');
       }
@@ -837,8 +833,6 @@
 
       if (drawMode === 'draw') {
         currentPath = { type: 'draw', points: [{x: startX, y: startY}] };
-      } else if (drawMode === 'arrow') {
-        currentPath = { type: 'arrow', from: {x: startX, y: startY}, to: {x: startX, y: startY} };
       } else if (drawMode === 'eraser') {
         eraseVectorAt(coords.x, coords.y);
       }
@@ -853,10 +847,6 @@
         currentPath.points.push({x: coords.x, y: coords.y});
         redrawVectorCanvas();
         drawSingleItem(currentPath);
-      } else if (drawMode === 'arrow') {
-        currentPath.to = {x: coords.x, y: coords.y};
-        redrawVectorCanvas();
-        drawSingleItem(currentPath);
       } else if (drawMode === 'eraser') {
         eraseVectorAt(coords.x, coords.y);
       }
@@ -868,9 +858,6 @@
       weekDrawings[currentVisibleWeek] = items.filter(item => {
         if (item.type === 'draw') {
           return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
-        } else if (item.type === 'arrow') {
-          return Math.hypot(item.from.x - x, item.from.y - y) >= radius &&
-                 Math.hypot(item.to.x - x, item.to.y - y) >= radius;
         }
         return true;
       });
@@ -906,29 +893,7 @@
           ctx.lineTo(item.points[i].x, item.points[i].y);
         }
         ctx.stroke();
-      } else if (item.type === 'arrow') {
-        drawArrow(item.from.x, item.from.y, item.to.x, item.to.y);
       }
-    }
-
-    function drawArrow(fromX, fromY, toX, toY) {
-      const headLength = 12;
-      const angle = Math.atan2(toY - fromY, toX - fromX);
-
-      ctx.strokeStyle = '#000000';
-      ctx.fillStyle = '#000000';
-      ctx.lineWidth = 3;
-
-      ctx.beginPath();
-      ctx.moveTo(fromX, fromY);
-      ctx.lineTo(toX, toY);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(toX, toY);
-      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
-      ctx.fill();
     }
 
     function clearCanvas() {
