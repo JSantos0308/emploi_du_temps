@@ -76,21 +76,27 @@ body{ display:flex; flex-direction:column; }
 .btn-week-nav:hover { color: #0056b3; }
 .current-week-label { font-size: 12px; text-transform: lowercase; }
 
+.date-range-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
 .week-dates-btn {
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
   color: #0f5132;
   font-weight: bold;
-  font-size: 12px;
-  padding: 3px 8px;
+  font-size: 11px;
+  padding: 3px 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 .week-dates-btn:hover { background: #e9ecef; }
-#datePickerInput {
+.date-picker-hidden {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -214,8 +220,13 @@ body{ display:flex; flex-direction:column; }
         <span id="currentWeekText" class="current-week-label">s1</span>
         <button id="btnNextWeek" class="btn-week-nav" title="Semaine suivante">&gt;</button>
       </div>
-      <button id="btnWeekDates" class="week-dates-btn" title="Choisir une date">📅 <span id="weekDatesText">14/09/2026 - 20/09/2026</span></button>
-      <input type="date" id="datePickerInput">
+      <div class="date-range-container">
+        <button id="btnStartDate" class="week-dates-btn" title="Choisir la date de début">Début : <span id="startDateText">14/09/2026</span></button>
+        <input type="date" id="startDatePicker" class="date-picker-hidden">
+        <span>-</span>
+        <button id="btnEndDate" class="week-dates-btn" title="Choisir la date de fin">Fin : <span id="endDateText">20/12/2026</span></button>
+        <input type="date" id="endDatePicker" class="date-picker-hidden">
+      </div>
     </div>
     <span id="viewOnlyBadge" class="viewonly-badge" style="display:none;">👁️ Lecture seule</span>
   </div>
@@ -657,9 +668,14 @@ onAuthStateChanged(auth, (user) => {
   function updateNavBarDisplay(wk) {
     const n = weekNum(wk);
     $('currentWeekText').textContent = 's' + n;
-    const mon = mondayOf(n);
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    $('weekDatesText').textContent = fmtShort(mon) + '/' + mon.getFullYear() + ' - ' + fmtShort(sun) + '/' + sun.getFullYear();
+  }
+
+  function updateRangeDisplay(startWk, endWk) {
+    const startMon = mondayOf(weekNum(startWk));
+    const endMon = mondayOf(weekNum(endWk));
+    const endSun = new Date(endMon); endSun.setDate(endSun.getDate() + 6);
+    $('startDateText').textContent = fmtShort(startMon) + '/' + startMon.getFullYear();
+    $('endDateText').textContent = fmtShort(endSun) + '/' + endSun.getFullYear();
   }
 
   function buildWeeks() {
@@ -709,6 +725,7 @@ onAuthStateChanged(auth, (user) => {
       block.appendChild(grid);
       weeksWrapper.appendChild(block);
     }
+    updateRangeDisplay('S1', weekKey(CONFIG.weeks));
   }
 
   function cardMatchesFilter(item) {
@@ -1067,29 +1084,57 @@ onAuthStateChanged(auth, (user) => {
     goToWeek(todayWk);
   });
 
-  $('btnWeekDates').addEventListener('click', () => {
-    $('datePickerInput').showPicker?.() || $('datePickerInput').click();
-  });
-
-  $('datePickerInput').addEventListener('change', (e) => {
-    const val = e.target.value;
-    if (!val) return;
-    const selectedDate = new Date(val);
+  function dateToWeekNum(dateVal) {
+    const selectedDate = new Date(dateVal);
     const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
     const diffTime = selectedDate - start;
     const diffDays = Math.floor(diffTime / 86400000);
-    if (diffDays < 0) {
-      goToWeek('S1');
+    if (diffDays < 0) return 1;
+    let n = Math.floor(diffDays / 7) + 1;
+    return Math.min(Math.max(n, 1), CONFIG.weeks);
+  }
+
+  function applyDateRangeFilter() {
+    const startInput = $('startDatePicker').value;
+    const endInput = $('endDatePicker').value;
+    
+    let startW = 1;
+    let endW = CONFIG.weeks;
+
+    if (startInput) startW = dateToWeekNum(startInput);
+    if (endInput) endW = dateToWeekNum(endInput);
+
+    if (startW > endW) {
+      toast("La date de début doit être antérieure à la date de fin.");
       return;
     }
-    let n = Math.floor(diffDays / 7) + 1;
-    n = Math.min(Math.max(n, 1), CONFIG.weeks);
-    goToWeek(weekKey(n));
+
+    for (let w = 1; w <= CONFIG.weeks; w++) {
+      if (w >= startW && w <= endW) {
+        blocks[w].style.display = '';
+      } else {
+        blocks[w].style.display = 'none';
+      }
+    }
+    updateRangeDisplay(weekKey(startW), weekKey(endW));
+    resizeCanvas();
+    toast("Affichage filtré de la semaine " + startW + " à la semaine " + endW);
+  }
+
+  $('btnStartDate').addEventListener('click', () => {
+    $('startDatePicker').showPicker?.() || $('startDatePicker').click();
   });
+  $('startDatePicker').addEventListener('change', applyDateRangeFilter);
+
+  $('btnEndDate').addEventListener('click', () => {
+    $('endDatePicker').showPicker?.() || $('endDatePicker').click();
+  });
+  $('endDatePicker').addEventListener('change', applyDateRangeFilter);
 
   function onScroll() {
     const probe = container.getBoundingClientRect().top + 150;
     for (let w = 1; w <= CONFIG.weeks; w++) {
+      if (blocks[w].style.display === 'none') continue;
       const r = blocks[w].getBoundingClientRect();
       if (r.top <= probe && r.bottom >= probe) { 
         currentVisibleWeek = weekKey(w); 
