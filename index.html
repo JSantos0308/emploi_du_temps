@@ -108,6 +108,7 @@
     .btn-import { background: #17a2b8; }
     .btn-save-cloud { background: #28a745; }
     .btn-logout { background: #6c757d; }
+    .btn-config { background: #343a40; }
     .btn-active { outline: 2px solid #333; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
 
     /* CONTENEUR ET GRILLE */
@@ -189,7 +190,7 @@
     .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #007bff; }
     .slot:hover { background-color: #f9f9f9; }
 
-    /* CARTES DE COURS AJUSTÉES POUR TOUT FIRE TENIR SUR UNE LIGNE */
+    /* CARTES DE COURS */
     .course-card {
       position: absolute;
       top: 1px; left: 1px; right: 1px;
@@ -217,7 +218,7 @@
     .course-card .subtitle { font-size: 8.5px; line-height: 1.1; color: #222222; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .course-card .location { font-size: 8px; font-weight: bold; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* MODALE */
+    /* MODALE COURS */
     .modal {
       display: none;
       position: fixed;
@@ -232,18 +233,19 @@
       background: white;
       padding: 15px;
       border-radius: 6px;
-      width: 300px;
+      width: 320px;
       display: flex;
       flex-direction: column;
       gap: 8px;
       font-size: 11px;
     }
 
-    .modal-content input, .modal-content select {
+    .modal-content input, .modal-content select, .modal-content textarea {
       padding: 5px;
       font-size: 11px;
       border: 1px solid #ccc;
       border-radius: 3px;
+      width: 100%;
     }
 
     .btn-group { display: flex; gap: 4px; flex-wrap: wrap; justify-content: space-between; margin-top: 6px; }
@@ -282,8 +284,10 @@
     </div>
 
     <div class="controls-group">
-      <button class="btn-action btn-copy" onclick="copyPreviousWeek()">📋 Copier S. Précédente</button>
-      <button class="btn-action btn-clear" onclick="clearCurrentWeek()">🗑️ Effacer S. Visible</button>
+      <button class="btn-action btn-config" onclick="openConfigModal('courses')">⚙️ Gérer Cours</button>
+      <button class="btn-action btn-config" onclick="openConfigModal('locations')">⚙️ Gérer Locaux</button>
+      <button class="btn-action btn-copy" onclick="copyPreviousWeek()">📋 Copier Préc.</button>
+      <button class="btn-action btn-clear" onclick="clearCurrentWeek()">🗑️ Effacer Semaine</button>
       <button class="btn-action btn-export" onclick="exportData()">💾 Exporter</button>
       <button class="btn-action btn-import" onclick="document.getElementById('importFile').click()">📂 Importer</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -297,13 +301,14 @@
     <div id="weeksWrapper"></div>
   </div>
 
-  <!-- MODALE COURS -->
+  <!-- MODALE EDITION ACTIVITÉ -->
   <div class="modal" id="courseModal">
     <div class="modal-content">
       <h3 id="modalTitle" style="margin:0 0 5px 0;">Détails de l'activité</h3>
       
-      <label>Code / Type :</label>
-      <input type="text" id="courseSearch" placeholder="Ex: ELECH3001 - Théorie">
+      <label>Code / Type de cours :</label>
+      <input type="text" id="courseSearch" list="coursesDatalist" placeholder="Ex: ELECH3001 - Théorie">
+      <datalist id="coursesDatalist"></datalist>
 
       <label>Nom / Intitulé du cours :</label>
       <input type="text" id="courseSubTitle" placeholder="Ex: Électricité appliquée">
@@ -334,6 +339,21 @@
         <button id="btnModalPaste" class="btn-action btn-modal-paste" onclick="pasteCourseModal()" style="display:none;">📋 Coller</button>
         <button class="btn-action btn-delete" onclick="deleteCourse()">Supprimer</button>
         <button class="btn-action btn-cancel" onclick="closeModal()">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE GESTION GLOBALE (COURS / LOCAUX) -->
+  <div class="modal" id="configModal">
+    <div class="modal-content" style="width: 360px;">
+      <h3 id="configModalTitle" style="margin:0 0 5px 0;">Gestion</h3>
+      <p id="configModalDesc" style="margin:0; font-size:10px; color:#555;"></p>
+      
+      <textarea id="configTextarea" rows="8" placeholder="Entrez un élément par ligne..."></textarea>
+
+      <div class="btn-group">
+        <button class="btn-action btn-save" onclick="saveConfigModal()">Mettre à jour</button>
+        <button class="btn-action btn-cancel" onclick="closeConfigModal()">Fermer</button>
       </div>
     </div>
   </div>
@@ -409,9 +429,10 @@
           timetable: allData,
           drawings: weekDrawings,
           locations: getStoredLocations(),
+          courses: getStoredCourses(),
           updatedAt: new Date()
         });
-        alert("Emploi du temps sauvegardé sur le Cloud !");
+        alert("Emploi du temps, cours et locaux sauvegardés sur le Cloud !");
       } catch (e) {
         alert("Erreur lors de la sauvegarde : " + e.message);
       }
@@ -437,6 +458,10 @@
             localStorage.setItem('timetable_saved_locations', JSON.stringify(data.locations));
             updateLocationsDatalist();
           }
+          if (data.courses) {
+            localStorage.setItem('timetable_saved_courses', JSON.stringify(data.courses));
+            updateCoursesDatalist();
+          }
         }
       } catch (e) {
         console.error("Erreur de chargement Cloud:", e);
@@ -453,13 +478,43 @@
     let draggedCardData = null;
     let copiedCourseBuffer = null;
     let hoveredSlot = null;
+    let currentConfigType = null;
 
     let weekDrawings = {}; 
     let currentPath = null;
 
+    // GESTION DES COURS ENREGISTRÉS
+    function getStoredCourses() {
+      const saved = localStorage.getItem('timetable_saved_courses');
+      if (saved) return JSON.parse(saved);
+      return [
+        "ELECH3001 - Théorie",
+        "ELECH3001 - Exercices 1",
+        "ELECH3001 - Exercices 2",
+        "MATHH2000 - Théorie",
+        "MATHH2000 - Exercices",
+        "MATHH3001 - Théorie",
+        "MATHH3001 - Exercices 2",
+        "MECAH200 - Exercices 2"
+      ];
+    }
+
+    function updateCoursesDatalist() {
+      const list = document.getElementById('coursesDatalist');
+      list.innerHTML = '';
+      const courses = getStoredCourses();
+      courses.forEach(c => {
+        let opt = document.createElement('option');
+        opt.value = c;
+        list.appendChild(opt);
+      });
+    }
+
+    // GESTION DES LOCAUX ENREGISTRÉS
     function getStoredLocations() {
       const saved = localStorage.getItem('timetable_saved_locations');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) return JSON.parse(saved);
+      return ["Bibliothèque", "Maison", "Casa", "Auditoire FERRER", "Auditoire GUILLISSEN", "Auditoire Aretha FRANKLIN"];
     }
 
     function saveLocation(loc) {
@@ -482,6 +537,45 @@
         opt.value = loc;
         locationsList.appendChild(opt);
       });
+    }
+
+    // OUVERTURE DU PANNEAU DE CONFIGURATION GLOBAL (COURS / LOCAUX)
+    function openConfigModal(type) {
+      currentConfigType = type;
+      const titleEl = document.getElementById('configModalTitle');
+      const descEl = document.getElementById('configModalDesc');
+      const textarea = document.getElementById('configTextarea');
+
+      if (type === 'courses') {
+        titleEl.textContent = "Liste globale des Cours";
+        descEl.textContent = "Modifiez ou ajoutez vos cours (un par ligne) :";
+        textarea.value = getStoredCourses().join('\n');
+      } else {
+        titleEl.textContent = "Liste globale des Locaux";
+        descEl.textContent = "Modifiez ou ajoutez vos locaux (un par ligne) :";
+        textarea.value = getStoredLocations().join('\n');
+      }
+      document.getElementById('configModal').style.display = 'flex';
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').style.display = 'none';
+    }
+
+    function saveConfigModal() {
+      const text = document.getElementById('configTextarea').value;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+
+      if (currentConfigType === 'courses') {
+        localStorage.setItem('timetable_saved_courses', JSON.stringify(lines));
+        updateCoursesDatalist();
+        alert("Liste des cours mise à jour !");
+      } else if (currentConfigType === 'locations') {
+        localStorage.setItem('timetable_saved_locations', JSON.stringify(lines));
+        updateLocationsDatalist();
+        alert("Liste des locaux mise à jour !");
+      }
+      closeConfigModal();
     }
 
     const weekSelect = document.getElementById('selectWeek');
@@ -859,6 +953,7 @@
       loadAllWeeksData();
       loadVectorData();
       updateLocationsDatalist();
+      updateCoursesDatalist();
 
       const targetWeek = getCurrentWeekKey();
       weekSelect.value = targetWeek;
@@ -953,6 +1048,7 @@
         btnPaste.style.display = copiedCourseBuffer ? 'inline-block' : 'none';
       }
       updateLocationsDatalist();
+      updateCoursesDatalist();
       document.getElementById('courseModal').style.display = 'flex';
     }
 
@@ -1134,7 +1230,8 @@
       const payload = {
         weeks: getAllWeeksData(),
         drawings: weekDrawings,
-        locations: getStoredLocations()
+        locations: getStoredLocations(),
+        courses: getStoredCourses()
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -1153,9 +1250,11 @@
           if (data.weeks) localStorage.setItem('timetable_multi_weeks', JSON.stringify(data.weeks));
           if (data.drawings) localStorage.setItem('timetable_drawings_vector', JSON.stringify(data.drawings));
           if (data.locations) localStorage.setItem('timetable_saved_locations', JSON.stringify(data.locations));
+          if (data.courses) localStorage.setItem('timetable_saved_courses', JSON.stringify(data.courses));
           loadAllWeeksData();
           loadVectorData();
           updateLocationsDatalist();
+          updateCoursesDatalist();
           alert("Données importées avec succès !");
         } catch (err) {
           alert("Fichier JSON invalide.");
