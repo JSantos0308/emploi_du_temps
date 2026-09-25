@@ -99,8 +99,6 @@
     }
 
     .btn-draw { background: #6f42c1; }
-    .btn-eraser { background: #ffc107; color: #111; }
-    .btn-clear-draw { background: #6c757d; }
     .btn-copy { background: #007bff; }
     .btn-clear { background: #dc3545; }
     .btn-export { background: #20c997; }
@@ -109,6 +107,59 @@
     .btn-logout { background: #6c757d; }
     .btn-config { background: #343a40; }
     .btn-active { outline: 2px solid #333; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
+
+    /* BARRE D'OUTILS DE DESSIN FLOTTANTE (STYLE TÉLÉPHONE) */
+    .drawing-toolbar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 30, 30, 0.9);
+      padding: 8px 14px;
+      border-radius: 30px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      backdrop-filter: blur(5px);
+    }
+
+    .drawing-toolbar.active {
+      display: flex;
+    }
+
+    .tool-btn {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .tool-btn.selected {
+      background: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 0 2px #007bff;
+    }
+
+    .tool-color-picker {
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      background: transparent;
+    }
 
     /* CONTENEUR ET GRILLE */
     .timetable-container {
@@ -276,9 +327,7 @@
     </div>
 
     <div class="controls-group">
-      <button id="btnPencil" class="btn-action btn-draw" onclick="setMode('draw')">✏️ Crayon</button>
-      <button id="btnEraser" class="btn-action btn-eraser" onclick="setMode('eraser')">🧹 Gomme</button>
-      <button class="btn-action btn-clear-draw" onclick="clearCanvas()">🧼 Tout Effacer</button>
+      <button id="btnPencil" class="btn-action btn-draw" onclick="toggleDrawingMode()">✏️ Dessiner</button>
     </div>
 
     <div class="controls-group">
@@ -292,6 +341,15 @@
       <button class="btn-action btn-save-cloud" onclick="saveDataToCloud()">☁️ Sauvegarder</button>
       <button class="btn-action btn-logout" onclick="logout()">🚪</button>
     </div>
+  </div>
+
+  <!-- BARRE D'OUTILS DE DESSIN FLOTTANTE (STYLE TÉLÉPHONE) -->
+  <div id="drawingToolbar" class="drawing-toolbar">
+    <button id="toolPen" class="tool-btn selected" title="Crayon" onclick="setDrawingTool('pen')">✏️</button>
+    <button id="toolHighlighter" class="tool-btn" title="Surligneur" onclick="setDrawingTool('highlighter')">🖍️</button>
+    <button id="toolEraser" class="tool-btn" title="Gomme" onclick="setDrawingTool('eraser')">🧹</button>
+    <input type="color" id="toolColor" class="tool-color-picker" value="#dc3545" title="Couleur du tracé">
+    <button class="tool-btn" title="Tout effacer" onclick="clearCanvas()">🗑️</button>
   </div>
 
   <div class="timetable-container" id="scrollContainer">
@@ -480,8 +538,9 @@
 
     let weekDrawings = {}; 
     let currentPath = null;
+    let isDrawingActive = false;
+    let currentTool = 'pen'; // 'pen', 'highlighter', 'eraser'
 
-    // GESTION DES COURS ENREGISTRÉS
     function getStoredCourses() {
       const saved = localStorage.getItem('timetable_saved_courses');
       if (saved) return JSON.parse(saved);
@@ -500,15 +559,13 @@
     function updateCoursesDatalist() {
       const list = document.getElementById('coursesDatalist');
       list.innerHTML = '';
-      const courses = getStoredCourses();
-      courses.forEach(c => {
+      getStoredCourses().forEach(c => {
         let opt = document.createElement('option');
         opt.value = c;
         list.appendChild(opt);
       });
     }
 
-    // GESTION DES LOCAUX ENREGISTRÉS
     function getStoredLocations() {
       const saved = localStorage.getItem('timetable_saved_locations');
       if (saved) return JSON.parse(saved);
@@ -529,15 +586,13 @@
     function updateLocationsDatalist() {
       const locationsList = document.getElementById('locationsList');
       locationsList.innerHTML = '';
-      const locations = getStoredLocations();
-      locations.forEach(loc => {
+      getStoredLocations().forEach(loc => {
         let opt = document.createElement('option');
         opt.value = loc;
         locationsList.appendChild(opt);
       });
     }
 
-    // OUVERTURE DU PANNEAU DE CONFIGURATION GLOBAL (COURS / LOCAUX)
     function openConfigModal(type) {
       currentConfigType = type;
       const titleEl = document.getElementById('configModalTitle');
@@ -668,7 +723,7 @@
           slot.onmouseleave = () => { if (hoveredSlot === slot) hoveredSlot = null; };
 
           slot.onclick = (e) => { 
-            if(drawMode === 'none' && !e.target.classList.contains('course-card')) {
+            if(!isDrawingActive && !e.target.classList.contains('course-card')) {
               openModal(slot); 
             }
           };
@@ -774,7 +829,6 @@
     const ctx = canvas.getContext('2d');
     const container = document.getElementById('scrollContainer');
 
-    let drawMode = 'none';
     let isDrawing = false;
     let startX = 0, startY = 0;
 
@@ -786,19 +840,28 @@
 
     window.addEventListener('resize', resizeCanvas);
 
-    function setMode(mode) {
-      if (drawMode === mode) {
-        drawMode = 'none';
-        document.getElementById('btnPencil').classList.remove('btn-active');
-        document.getElementById('btnEraser').classList.remove('btn-active');
-        canvas.classList.remove('active');
-      } else {
+    function toggleDrawingMode() {
+      isDrawingActive = !isDrawingActive;
+      const btnPencil = document.getElementById('btnPencil');
+      const toolbar = document.getElementById('drawingToolbar');
+
+      if (isDrawingActive) {
         resizeCanvas();
-        drawMode = mode;
-        document.getElementById('btnPencil').classList.toggle('btn-active', mode === 'draw');
-        document.getElementById('btnEraser').classList.toggle('btn-active', mode === 'eraser');
+        btnPencil.classList.add('btn-active');
+        toolbar.classList.add('active');
         canvas.classList.add('active');
+      } else {
+        btnPencil.classList.remove('btn-active');
+        toolbar.classList.remove('active');
+        canvas.classList.remove('active');
       }
+    }
+
+    function setDrawingTool(tool) {
+      currentTool = tool;
+      document.getElementById('toolPen').classList.toggle('selected', tool === 'pen');
+      document.getElementById('toolHighlighter').classList.toggle('selected', tool === 'highlighter');
+      document.getElementById('toolEraser').classList.toggle('selected', tool === 'eraser');
     }
 
     function getCanvasCoords(e) {
@@ -820,7 +883,7 @@
     canvas.addEventListener('touchend', stopDrawing);
 
     function startDrawing(e) {
-      if (drawMode === 'none') return;
+      if (!isDrawingActive) return;
       e.preventDefault();
       isDrawing = true;
       const coords = getCanvasCoords(e);
@@ -831,23 +894,27 @@
         weekDrawings[currentVisibleWeek] = [];
       }
 
-      if (drawMode === 'draw') {
-        currentPath = { type: 'draw', points: [{x: startX, y: startY}] };
-      } else if (drawMode === 'eraser') {
+      const color = document.getElementById('toolColor').value;
+
+      if (currentTool === 'pen') {
+        currentPath = { type: 'pen', color: color, points: [{x: startX, y: startY}] };
+      } else if (currentTool === 'highlighter') {
+        currentPath = { type: 'highlighter', color: color, points: [{x: startX, y: startY}] };
+      } else if (currentTool === 'eraser') {
         eraseVectorAt(coords.x, coords.y);
       }
     }
 
     function draw(e) {
-      if (!isDrawing || drawMode === 'none') return;
+      if (!isDrawing || !isDrawingActive) return;
       e.preventDefault();
       const coords = getCanvasCoords(e);
 
-      if (drawMode === 'draw') {
+      if (currentTool === 'pen' || currentTool === 'highlighter') {
         currentPath.points.push({x: coords.x, y: coords.y});
         redrawVectorCanvas();
         drawSingleItem(currentPath);
-      } else if (drawMode === 'eraser') {
+      } else if (currentTool === 'eraser') {
         eraseVectorAt(coords.x, coords.y);
       }
     }
@@ -856,10 +923,7 @@
       const items = weekDrawings[currentVisibleWeek] || [];
       const radius = 15;
       weekDrawings[currentVisibleWeek] = items.filter(item => {
-        if (item.type === 'draw') {
-          return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
-        }
-        return true;
+        return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
       });
       redrawVectorCanvas();
     }
@@ -867,7 +931,7 @@
     function stopDrawing() {
       if (isDrawing) {
         isDrawing = false;
-        if (currentPath && drawMode !== 'eraser') {
+        if (currentPath && currentTool !== 'eraser') {
           weekDrawings[currentVisibleWeek].push(currentPath);
         }
         currentPath = null;
@@ -882,18 +946,26 @@
     }
 
     function drawSingleItem(item) {
-      if (item.type === 'draw') {
-        if (item.points.length < 2) return;
-        ctx.strokeStyle = '#dc3545';
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(item.points[0].x, item.points[0].y);
-        for (let i = 1; i < item.points.length; i++) {
-          ctx.lineTo(item.points[i].x, item.points[i].y);
-        }
-        ctx.stroke();
+      if (item.points.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(item.points[0].x, item.points[0].y);
+      for (let i = 1; i < item.points.length; i++) {
+        ctx.lineTo(item.points[i].x, item.points[i].y);
       }
+
+      if (item.type === 'pen') {
+        ctx.strokeStyle = item.color || '#dc3545';
+        ctx.lineWidth = 2.5;
+        ctx.globalAlpha = 1.0;
+      } else if (item.type === 'highlighter') {
+        ctx.strokeStyle = item.color || '#ffeb3b';
+        ctx.lineWidth = 14;
+        ctx.globalAlpha = 0.4;
+      }
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
     }
 
     function clearCanvas() {
@@ -1113,7 +1185,7 @@
 
       card.onclick = (e) => {
         e.stopPropagation();
-        if (drawMode === 'none') {
+        if (!isDrawingActive) {
           openModal(slot);
         }
       };
@@ -1131,7 +1203,7 @@
       };
 
       card.ontouchstart = () => {
-        if (drawMode !== 'none') return;
+        if (isDrawingActive) return;
         draggedCardData = {
           title: card.dataset.title,
           subtitle: card.dataset.subtitle,
@@ -1143,7 +1215,7 @@
       };
 
       card.ontouchend = (e) => {
-        if (!draggedCardData) return;
+        if (!draggedCardData || isDrawingActive) return;
         const touch = e.changedTouches[0];
         const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
         const targetSlot = targetEl ? targetEl.closest('.slot') : null;
