@@ -9,6 +9,7 @@
 :root {
   --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
   --border-color:#cccccc; --row-height:56px;
+  --today-bg:#e6f4ea; --today-header-bg:#0f5132; --today-header-color:#ffffff;
 }
 * { box-sizing:border-box; }
 html,body{
@@ -160,11 +161,13 @@ body{ display:flex; flex-direction:column; }
   background:#fff; color:#111; height:22px; border-bottom:2px solid #ccc; border-top:1px solid #e0e0e0;
 }
 .header-cell{ border-right:1px solid #e0e0e0; font-weight:bold; display:flex; align-items:center; justify-content:center; font-size:11px; padding:0 2px; overflow:hidden; }
+.header-cell.today-col { background: var(--today-header-bg); color: var(--today-header-color); }
 
 .timetable-body{ display:grid; grid-template-columns:55px repeat(7,1fr); grid-template-rows:repeat(12,var(--row-height)); }
 .time-cell,.slot{ border-bottom:1px solid var(--border-color); border-right:1px solid var(--border-color); }
 .time-cell{ background:#f8f9fa; font-size:10px; padding:2px 4px; color:#333; font-weight:bold; display:flex; align-items:flex-start; }
 .slot{ position:relative; cursor:pointer; z-index:2; }
+.slot.today-col { background: var(--today-bg); }
 .slot.drag-over{ background:#e2e8f0; border:2px dashed #007bff; }
 .slot:hover{ background:#f9f9f9; }
 .slot.view-only{ cursor:default; }
@@ -676,6 +679,9 @@ onAuthStateChanged(auth, (user) => {
   }
 
   function buildWeeks() {
+    const now = new Date();
+    const todayDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     for (let w = 1; w <= CONFIG.weeks; w++) {
       const wk = weekKey(w), mon = mondayOf(w), sun = new Date(mon); sun.setDate(sun.getDate()+6);
 
@@ -686,11 +692,19 @@ onAuthStateChanged(auth, (user) => {
       const headerRow = document.createElement('div'); headerRow.className = 'header-row';
       headerRows[w] = headerRow;
       const corner = document.createElement('div'); corner.className = 'header-cell'; corner.textContent = wk; headerRow.appendChild(corner);
+      
+      const dayCells = [];
       for (let d = 0; d < 7; d++) {
         const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
         const cell = document.createElement('div'); cell.className = 'header-cell';
         cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate);
+        
+        const isToday = (dayDate.getTime() === todayDateOnly.getTime());
+        if (isToday) {
+          cell.classList.add('today-col');
+        }
         headerRow.appendChild(cell);
+        dayCells.push(isToday);
       }
       block.appendChild(headerRow);
 
@@ -700,6 +714,9 @@ onAuthStateChanged(auth, (user) => {
         grid.appendChild(timeCell);
         for (let day = 0; day < 7; day++) {
           const slot = document.createElement('div'); slot.className = 'slot';
+          if (dayCells[day]) {
+            slot.classList.add('today-col');
+          }
           slotMap[wk + '-' + day + '-' + h] = slot;
 
           slot.addEventListener('mouseenter', () => { hovered = { week: wk, day, hour: h }; });
