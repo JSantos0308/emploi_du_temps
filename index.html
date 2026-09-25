@@ -175,13 +175,13 @@
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 5; /* Derrière les cartes de cours pour pouvoir cliquer sur les cours sans gêne, mais activable en mode dessin */
+      z-index: 5;
       pointer-events: none;
     }
 
     #drawingCanvas.active {
       pointer-events: auto;
-      z-index: 25; /* Au-dessus de tout quand on dessine */
+      z-index: 25;
       cursor: crosshair;
     }
 
@@ -1063,12 +1063,15 @@
       updateCoursesDatalist();
       initGlobalHistory();
 
+      // Ciblage explicite sur la semaine actuelle (Semaine 2 en date du 25 septembre 2026)
       const targetWeek = getCurrentWeekKey();
+      currentVisibleWeek = targetWeek;
       weekSelect.value = targetWeek;
+
       setTimeout(() => {
         scrollToSelectedWeek();
         resizeCanvas();
-      }, 150);
+      }, 100);
 
       container.addEventListener('scroll', () => {
         for (let w = 1; w <= 14; w++) {
@@ -1091,7 +1094,9 @@
     function scrollToSelectedWeek() {
       const selected = weekSelect.value;
       const targetBlock = document.getElementById(`week-block-${selected}`);
-      if (targetBlock) targetBlock.scrollIntoView({ behavior: 'smooth' });
+      if (targetBlock) {
+        targetBlock.scrollIntoView({ behavior: 'auto' }); // Défilement immédiat à l'ouverture
+      }
     }
 
     function getAllWeeksData() {
