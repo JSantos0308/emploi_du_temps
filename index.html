@@ -175,12 +175,13 @@
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 15;
+      z-index: 5; /* Derrière les cartes de cours pour pouvoir cliquer sur les cours sans gêne, mais activable en mode dessin */
       pointer-events: none;
     }
 
     #drawingCanvas.active {
       pointer-events: auto;
+      z-index: 25; /* Au-dessus de tout quand on dessine */
       cursor: crosshair;
     }
 
@@ -237,7 +238,7 @@
       align-items: flex-start;
     }
 
-    .slot { position: relative; cursor: pointer; touch-action: none; }
+    .slot { position: relative; cursor: pointer; touch-action: none; z-index: 2; }
     .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #007bff; }
     .slot:hover { background-color: #f9f9f9; }
 
@@ -250,7 +251,7 @@
       color: #111;
       overflow: hidden;
       border: 1px solid rgba(0,0,0,0.15);
-      z-index: 2;
+      z-index: 6;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -531,7 +532,7 @@
 
   <!-- LOGIQUE EMPLOI DU TEMPS -->
   <script>
-    const startDateS1 = new Date(2026, 8, 14);
+    const startDateS1 = new Date(2026, 8, 14); // 14 septembre 2026
     const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
     let currentVisibleWeek = "S1";
     let selectedSlot = null;
@@ -552,7 +553,7 @@
     function captureGlobalState() {
       return {
         timetable: getAllWeeksData(),
-        drawings: weekDrawings,
+        drawings: JSON.parse(JSON.stringify(weekDrawings)),
         locations: getStoredLocations(),
         courses: getStoredCourses()
       };
@@ -991,6 +992,7 @@
       });
       redrawVectorCanvas();
       saveVectorData();
+      pushGlobalHistory();
     }
 
     function stopDrawing() {
