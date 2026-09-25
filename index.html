@@ -329,8 +329,8 @@
 
     <div class="controls-group">
       <button id="btnPencil" class="btn-action btn-draw" onclick="toggleDrawingMode()">✏️ Dessiner</button>
-      <button class="btn-action btn-history" onclick="undoTimetable()" title="Annuler (Cours)">↩️</button>
-      <button class="btn-action btn-history" onclick="redoTimetable()" title="Rétablir (Cours)">↪️</button>
+      <button class="btn-action btn-history" onclick="undoGlobal()" title="Annuler">↩️</button>
+      <button class="btn-action btn-history" onclick="redoGlobal()" title="Rétablir">↪️</button>
     </div>
 
     <div class="controls-group">
@@ -352,8 +352,6 @@
     <button id="toolHighlighter" class="tool-btn" title="Surligneur" onclick="setDrawingTool('highlighter')">🖍️</button>
     <button id="toolEraser" class="tool-btn" title="Gomme" onclick="setDrawingTool('eraser')">🧹</button>
     <input type="color" id="toolColor" class="tool-color-picker" value="#dc3545" title="Couleur du tracé">
-    <button class="tool-btn" title="Annuler (Dessin)" onclick="undoDrawing()">↩️</button>
-    <button class="tool-btn" title="Rétablir (Dessin)" onclick="redoDrawing()">↪️</button>
     <button class="tool-btn" title="Tout effacer" onclick="clearCanvas()">🗑️</button>
   </div>
 
@@ -509,7 +507,6 @@
           if (data.timetable) {
             localStorage.setItem('timetable_multi_weeks', JSON.stringify(data.timetable));
             loadAllWeeksData();
-            initTimetableHistory();
           }
           if (data.drawings) {
             weekDrawings = data.drawings;
@@ -524,6 +521,7 @@
             localStorage.setItem('timetable_saved_courses', JSON.stringify(data.courses));
             updateCoursesDatalist();
           }
+          initGlobalHistory();
         }
       } catch (e) {
         console.error("Erreur de chargement Cloud:", e);
@@ -547,71 +545,60 @@
     let isDrawingActive = false;
     let currentTool = 'pen';
 
-    // HISTORIQUE GLOBAL POUR LES COURS (UNDO / REDO)
-    let timetableHistory = [];
-    let timetableHistoryIndex = -1;
+    // HISTORIQUE GLOBAL UNIFIÉ (COURS + DESSINS + LOCAUX)
+    let globalHistory = [];
+    let globalHistoryIndex = -1;
 
-    function pushTimetableHistory() {
-      const currentState = getAllWeeksData();
-      // Si on n'est pas à la fin de l'historique, on coupe les actions futures
-      if (timetableHistoryIndex < timetableHistory.length - 1) {
-        timetableHistory = timetableHistory.slice(0, timetableHistoryIndex + 1);
+    function captureGlobalState() {
+      return {
+        timetable: getAllWeeksData(),
+        drawings: weekDrawings,
+        locations: getStoredLocations(),
+        courses: getStoredCourses()
+      };
+    }
+
+    function pushGlobalHistory() {
+      const state = captureGlobalState();
+      if (globalHistoryIndex < globalHistory.length - 1) {
+        globalHistory = globalHistory.slice(0, globalHistoryIndex + 1);
       }
-      timetableHistory.push(JSON.stringify(currentState));
-      timetableHistoryIndex = timetableHistory.length - 1;
+      globalHistory.push(JSON.stringify(state));
+      globalHistoryIndex = globalHistory.length - 1;
     }
 
-    function initTimetableHistory() {
-      timetableHistory = [JSON.stringify(getAllWeeksData())];
-      timetableHistoryIndex = 0;
+    function initGlobalHistory() {
+      globalHistory = [JSON.stringify(captureGlobalState())];
+      globalHistoryIndex = 0;
     }
 
-    function undoTimetable() {
-      if (timetableHistoryIndex > 0) {
-        timetableHistoryIndex--;
-        const state = JSON.parse(timetableHistory[timetableHistoryIndex]);
-        localStorage.setItem('timetable_multi_weeks', JSON.stringify(state));
-        loadAllWeeksDataSilent();
-        resizeCanvas();
-      }
+    function applyGlobalState(stateObj) {
+      localStorage.setItem('timetable_multi_weeks', JSON.stringify(stateObj.timetable || {}));
+      weekDrawings = stateObj.drawings || {};
+      localStorage.setItem('timetable_drawings_vector', JSON.stringify(weekDrawings));
+      localStorage.setItem('timetable_saved_locations', JSON.stringify(stateObj.locations || []));
+      localStorage.setItem('timetable_saved_courses', JSON.stringify(stateObj.courses || []));
+
+      loadAllWeeksDataSilent();
+      redrawVectorCanvas();
+      updateLocationsDatalist();
+      updateCoursesDatalist();
+      resizeCanvas();
     }
 
-    function redoTimetable() {
-      if (timetableHistoryIndex < timetableHistory.length - 1) {
-        timetableHistoryIndex++;
-        const state = JSON.parse(timetableHistory[timetableHistoryIndex]);
-        localStorage.setItem('timetable_multi_weeks', JSON.stringify(state));
-        loadAllWeeksDataSilent();
-        resizeCanvas();
-      }
-    }
-
-    // HISTORIQUE SPÉCIFIQUE AU DESSIN (UNDO / REDO PAR SEMAINE)
-    function undoDrawing() {
-      if (!weekDrawings[currentVisibleWeek]) weekDrawings[currentVisibleWeek] = { strokes: [], history: [] };
-      let wData = weekDrawings[currentVisibleWeek];
-      if (!wData.history) wData.history = [];
-      
-      // On s'assure d'avoir un état de base
-      if (!wData.strokes) wData.strokes = [];
-      
-      if (wData.strokes.length > 0) {
-        if (!wData.redoStack) wData.redoStack = [];
-        const removed = wData.strokes.pop();
-        wData.redoStack.push(removed);
-        redrawVectorCanvas();
-        saveVectorData();
+    function undoGlobal() {
+      if (globalHistoryIndex > 0) {
+        globalHistoryIndex--;
+        const stateObj = JSON.parse(globalHistory[globalHistoryIndex]);
+        applyGlobalState(stateObj);
       }
     }
 
-    function redoDrawing() {
-      if (!weekDrawings[currentVisibleWeek]) return;
-      let wData = weekDrawings[currentVisibleWeek];
-      if (wData.redoStack && wData.redoStack.length > 0) {
-        const restored = wData.redoStack.pop();
-        wData.strokes.push(restored);
-        redrawVectorCanvas();
-        saveVectorData();
+    function redoGlobal() {
+      if (globalHistoryIndex < globalHistory.length - 1) {
+        globalHistoryIndex++;
+        const stateObj = JSON.parse(globalHistory[globalHistoryIndex]);
+        applyGlobalState(stateObj);
       }
     }
 
@@ -702,6 +689,7 @@
         updateLocationsDatalist();
         alert("Liste des locaux mise à jour !");
       }
+      pushGlobalHistory();
       closeConfigModal();
     }
 
@@ -832,7 +820,7 @@
                 draggedCardData.duration
               );
               saveAllWeeksData();
-              pushTimetableHistory();
+              pushGlobalHistory();
               resizeCanvas();
               draggedCardData = null;
             }
@@ -895,7 +883,7 @@
             copiedCourseBuffer.duration
           );
           saveAllWeeksData();
-          pushTimetableHistory();
+          pushGlobalHistory();
           resizeCanvas();
         }
       }
@@ -967,10 +955,7 @@
       startY = coords.y;
 
       if (!weekDrawings[currentVisibleWeek]) {
-        weekDrawings[currentVisibleWeek] = { strokes: [], redoStack: [] };
-      }
-      if (!weekDrawings[currentVisibleWeek].strokes) {
-        weekDrawings[currentVisibleWeek].strokes = [];
+        weekDrawings[currentVisibleWeek] = [];
       }
 
       const color = document.getElementById('toolColor').value;
@@ -999,34 +984,32 @@
     }
 
     function eraseVectorAt(x, y) {
-      let wData = weekDrawings[currentVisibleWeek];
-      if (!wData || !wData.strokes) return;
+      const items = weekDrawings[currentVisibleWeek] || [];
       const radius = 15;
-      wData.strokes = wData.strokes.filter(item => {
+      weekDrawings[currentVisibleWeek] = items.filter(item => {
         return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
       });
       redrawVectorCanvas();
+      saveVectorData();
     }
 
     function stopDrawing() {
       if (isDrawing) {
         isDrawing = false;
         if (currentPath && currentTool !== 'eraser') {
-          let wData = weekDrawings[currentVisibleWeek];
-          wData.strokes.push(currentPath);
-          wData.redoStack = []; // Vider la pile redo à chaque nouveau trait
+          if (!weekDrawings[currentVisibleWeek]) weekDrawings[currentVisibleWeek] = [];
+          weekDrawings[currentVisibleWeek].push(currentPath);
         }
         currentPath = null;
         saveVectorData();
+        pushGlobalHistory();
       }
     }
 
     function redrawVectorCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      let wData = weekDrawings[currentVisibleWeek];
-      if (wData && wData.strokes) {
-        wData.strokes.forEach(drawSingleItem);
-      }
+      const items = weekDrawings[currentVisibleWeek] || [];
+      items.forEach(drawSingleItem);
     }
 
     function drawSingleItem(item) {
@@ -1054,12 +1037,10 @@
 
     function clearCanvas() {
       if (confirm('Effacer les annotations de cette semaine ?')) {
-        if (weekDrawings[currentVisibleWeek]) {
-          weekDrawings[currentVisibleWeek].strokes = [];
-          weekDrawings[currentVisibleWeek].redoStack = [];
-        }
+        weekDrawings[currentVisibleWeek] = [];
         redrawVectorCanvas();
         saveVectorData();
+        pushGlobalHistory();
       }
     }
 
@@ -1069,18 +1050,7 @@
 
     function loadVectorData() {
       const saved = localStorage.getItem('timetable_drawings_vector');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Conversion de rétrocompatibilité si l'ancien format tableau était utilisé
-        Object.keys(parsed).forEach(k => {
-          if (Array.isArray(parsed[k])) {
-            parsed[k] = { strokes: parsed[k], redoStack: [] };
-          }
-        });
-        weekDrawings = parsed;
-      } else {
-        weekDrawings = {};
-      }
+      weekDrawings = saved ? JSON.parse(saved) : {};
       redrawVectorCanvas();
     }
 
@@ -1089,7 +1059,7 @@
       loadVectorData();
       updateLocationsDatalist();
       updateCoursesDatalist();
-      initTimetableHistory();
+      initGlobalHistory();
 
       const targetWeek = getCurrentWeekKey();
       weekSelect.value = targetWeek;
@@ -1227,7 +1197,7 @@
         copiedCourseBuffer.duration
       );
       saveAllWeeksData();
-      pushTimetableHistory();
+      pushGlobalHistory();
       closeModal();
       resizeCanvas();
     }
@@ -1248,7 +1218,7 @@
       selectedSlot.textContent = '';
       if (title.trim() !== '') addCardToSlot(selectedSlot, title, subtitle, type, loc, duration);
       saveAllWeeksData();
-      pushTimetableHistory();
+      pushGlobalHistory();
       closeModal();
       resizeCanvas();
     }
@@ -1256,7 +1226,7 @@
     function deleteCourse() {
       if (selectedSlot) selectedSlot.textContent = '';
       saveAllWeeksData();
-      pushTimetableHistory();
+      pushGlobalHistory();
       closeModal();
       resizeCanvas();
     }
@@ -1346,7 +1316,7 @@
               draggedCardData.duration
             );
             saveAllWeeksData();
-            pushTimetableHistory();
+            pushGlobalHistory();
             resizeCanvas();
           }
         }
@@ -1365,7 +1335,7 @@
         allData[currentVisibleWeek] = JSON.parse(JSON.stringify(allData[prevWeekKey] || []));
         localStorage.setItem('timetable_multi_weeks', JSON.stringify(allData));
         loadAllWeeksData();
-        pushTimetableHistory();
+        pushGlobalHistory();
         resizeCanvas();
       }
     }
@@ -1374,7 +1344,7 @@
       if (confirm(`Effacer l'emploi du temps de la semaine ${currentVisibleWeek} ?`)) {
         document.querySelectorAll(`.slot[data-week="${currentVisibleWeek}"]`).forEach(s => s.textContent = '');
         saveAllWeeksData();
-        pushTimetableHistory();
+        pushGlobalHistory();
         resizeCanvas();
       }
     }
@@ -1408,7 +1378,7 @@
           loadVectorData();
           updateLocationsDatalist();
           updateCoursesDatalist();
-          initTimetableHistory();
+          initGlobalHistory();
           alert("Données importées avec succès !");
         } catch (err) {
           alert("Fichier JSON invalide.");
