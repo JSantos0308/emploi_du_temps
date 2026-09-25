@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Mon Emploi du Temps XL</title>
+<!-- Intégration de html2pdf pour l'export PDF propre -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root {
   --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
@@ -59,16 +61,18 @@ body{ display:flex; flex-direction:column; }
 .range-bar select{ font-size:11px; padding:2px 4px; border-radius:3px; border:1px solid #ccc; }
 .viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; }
 
+/* PANNEAU FILTRE MODIFIÉ (STYLE IMAGE 3) */
 .filter-panel{
   position:fixed; top:64px; right:10px; background:#fff; border:1px solid #ccc; border-radius:6px;
-  box-shadow:0 4px 16px rgba(0,0,0,.2); padding:10px; width:260px; max-height:70vh; overflow:auto; z-index:120; display:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.2); padding:12px; width:280px; z-index:120; display:none; font-size:12px;
 }
 .filter-panel.open{ display:block; }
-.filter-panel h4{ margin:0 0 6px; font-size:12px; }
-.filter-group{ margin-bottom:10px; }
-.filter-opt{ display:flex; align-items:center; gap:6px; font-size:11.5px; padding:2px 0; }
-.filter-actions{ display:flex; justify-content:space-between; gap:6px; margin-top:6px; }
-.filter-actions button{ font-size:11px; }
+.filter-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-weight:bold; font-size:14px; }
+.filter-clear { font-size:11px; color:#007bff; cursor:pointer; text-decoration:underline; background:none; border:none; padding:0; }
+.filter-group{ margin-bottom:10px; display:flex; flex-direction:column; gap:4px; }
+.filter-group label { font-size:11px; color:#333; font-weight:bold; }
+.filter-panel select{ width:100%; padding:5px; font-size:11px; border:1px solid #ccc; border-radius:3px; background:#fff; }
+.btn-filter-submit{ background:#0f5132; color:#fff; width:100%; padding:6px; border:none; border-radius:4px; font-weight:bold; cursor:pointer; margin-top:6px; }
 
 .drawing-toolbar{
   position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(30,30,30,.9);
@@ -179,23 +183,37 @@ body{ display:flex; flex-direction:column; }
   <button id="btnRangeAll" class="btn-action btn-copy" style="height:20px;">Tout afficher</button>
 </div>
 
+<!-- PANNEAU FILTRE MODIFIÉ (STYLE IMAGE 3) -->
+<div id="filterPanel" class="filter-panel">
+  <div class="filter-header">
+    <span>Filtre</span>
+    <button id="btnFilterClear" class="filter-clear">Effacer filtre</button>
+  </div>
+  <div class="filter-group">
+    <label>Cours</label>
+    <select id="filterSelectCourse">
+      <option value="">Tous les cours</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Type de réservation</label>
+    <select id="filterSelectType">
+      <option value="">Tous les types</option>
+      <option value="theorie">Théorie</option>
+      <option value="exercices">Exercices / TP</option>
+      <option value="labo">Laboratoire</option>
+      <option value="etude">Étude / Perso</option>
+    </select>
+  </div>
+  <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
+</div>
+
 <div id="drawingToolbar" class="drawing-toolbar">
   <button id="toolPen" class="tool-btn selected" title="Crayon">✏️</button>
   <button id="toolHighlighter" class="tool-btn" title="Surligneur">🖍️</button>
   <button id="toolEraser" class="tool-btn" title="Gomme">🧹</button>
   <input type="color" id="toolColor" class="tool-color-picker" value="#dc3545" title="Couleur du tracé">
   <button id="btnClearCanvas" class="tool-btn" title="Effacer cette semaine">🗑️</button>
-</div>
-
-<div id="filterPanel" class="filter-panel">
-  <h4>Filtrer par type</h4>
-  <div class="filter-group" id="filterTypes"></div>
-  <h4>Filtrer par cours</h4>
-  <div class="filter-group" id="filterNames"></div>
-  <div class="filter-actions">
-    <button id="btnFilterReset" class="btn-action btn-cancel">Réinitialiser</button>
-    <button id="btnFilterClose" class="btn-action btn-save">Fermer</button>
-  </div>
 </div>
 
 <div class="timetable-container" id="scrollContainer">
@@ -256,6 +274,19 @@ body{ display:flex; flex-direction:column; }
     <div class="btn-group">
       <button id="btnSaveConfig" class="btn-action btn-save">Mettre à jour</button>
       <button id="btnCloseConfig" class="btn-action btn-cancel">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE DE CHOIX DE PARTAGE (LIEN OU PDF) -->
+<div class="modal" id="shareModal" role="dialog" aria-modal="true">
+  <div class="modal-content" style="width: 300px;">
+    <h3 style="margin:0 0 8px;">Partager l'emploi du temps</h3>
+    <p class="modal-hint" style="margin-bottom:8px;">Choisissez le mode de partage :</p>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien de partage</button>
+      <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px;">📄 Télécharger en PDF</button>
+      <button id="btnShareClose" class="btn-action btn-cancel" style="justify-content:center; height:32px;">Annuler</button>
     </div>
   </div>
 </div>
@@ -375,7 +406,7 @@ onAuthStateChanged(auth, (user) => {
   'use strict';
 
   const CONFIG = {
-    startDateS1: new Date(2026, 8, 14),
+    startDateS1: new Date(2026, 8, 14), // 14 septembre 2026
     weeks: 14,
     hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"],
     defaultCatalog: [
@@ -436,7 +467,7 @@ onAuthStateChanged(auth, (user) => {
   let strokes = [];
   let catalog = [];
   let locations = [];
-  let filter = { types: new Set(), names: new Set() };
+  let filter = { course: '', type: '' };
   let range = { from: 1, to: CONFIG.weeks };
   let hovered = null;
   let dragged = null;
@@ -555,11 +586,21 @@ onAuthStateChanged(auth, (user) => {
 
   const weeksWrapper = $('weeksWrapper'), weekSelect = $('selectWeek'), container = $('scrollContainer');
   function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
-  function fmtYY(d) { return String(d.getFullYear()).slice(-2); }
   function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
+  
+  // Calcul précis et robuste de la semaine actuelle basé sur la date d'aujourd'hui
   function getCurrentWeekKey() {
-    const diffDays = Math.floor((new Date() - CONFIG.startDateS1) / 86400000);
-    let n = Math.floor(diffDays/7) + 1; n = Math.min(Math.max(n,1), CONFIG.weeks);
+    const now = new Date();
+    // Normaliser à minuit pour comparer les jours proprement
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
+    
+    const diffTime = today - start;
+    const diffDays = Math.floor(diffTime / 86400000);
+    
+    if (diffDays < 0) return 'S1'; // Avant le début de S1
+    let n = Math.floor(diffDays / 7) + 1; 
+    n = Math.min(Math.max(n, 1), CONFIG.weeks);
     return weekKey(n);
   }
 
@@ -568,6 +609,7 @@ onAuthStateChanged(auth, (user) => {
       const wk = weekKey(w), mon = mondayOf(w), sun = new Date(mon); sun.setDate(sun.getDate()+6);
 
       const opt = document.createElement('option'); opt.value = wk;
+      // SUPPRESSION DE L'ANNÉE /26 ICI AUSSI
       opt.textContent = 'Semaine ' + w + ' (' + fmtShort(mon) + ' - ' + fmtShort(sun) + ')';
       weekSelect.appendChild(opt);
 
@@ -581,7 +623,8 @@ onAuthStateChanged(auth, (user) => {
       for (let d = 0; d < 7; d++) {
         const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
         const cell = document.createElement('div'); cell.className = 'header-cell';
-        cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate) + '/' + fmtYY(dayDate);
+        // MODIFICATION DEMANDÉE : SUPPRESSION DU /26 DANS LES EN-TÊTES DE JOURS
+        cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate);
         headerRow.appendChild(cell);
       }
       block.appendChild(headerRow);
@@ -617,8 +660,8 @@ onAuthStateChanged(auth, (user) => {
   }
 
   function cardMatchesFilter(item) {
-    if (filter.types.size && !filter.types.has(item.type)) return false;
-    if (filter.names.size && !filter.names.has(item.title)) return false;
+    if (filter.course && item.title !== filter.course) return false;
+    if (filter.type && item.type !== filter.type) return false;
     return true;
   }
 
@@ -651,36 +694,40 @@ onAuthStateChanged(auth, (user) => {
     }));
   }
 
-  const TYPE_LABELS = { theorie:'Théorie', exercices:'Exercices / TP', labo:'Laboratoire', etude:'Étude / Perso' };
-
+  // GESTION DU FILTRE MODIFIÉ (STYLE IMAGE 3)
   function refreshFilterOptions() {
-    const typesBox = $('filterTypes'); typesBox.innerHTML = '';
-    TYPES.forEach((t) => {
-      const id = 'ft_' + t;
-      const row = document.createElement('label'); row.className = 'filter-opt'; row.htmlFor = id;
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = id; cb.checked = filter.types.has(t);
-      cb.addEventListener('change', () => { cb.checked ? filter.types.add(t) : filter.types.delete(t); renderCards(); });
-      row.appendChild(cb); row.appendChild(document.createTextNode(TYPE_LABELS[t]));
-      typesBox.appendChild(row);
-    });
-
+    const selectCourse = $('filterSelectCourse');
+    // Conserver la première option par défaut
+    selectCourse.innerHTML = '<option value="">Tous les cours</option>';
+    
     const namesSet = new Set();
     Object.keys(courses).forEach((wk) => courses[wk].forEach((it) => namesSet.add(it.title)));
-    const namesBox = $('filterNames'); namesBox.innerHTML = '';
-    if (!namesSet.size) { namesBox.innerHTML = '<p class="modal-hint">Aucun cours planifié pour l’instant.</p>'; }
-    Array.from(namesSet).sort().forEach((name, i) => {
-      const id = 'fn_' + i;
-      const row = document.createElement('label'); row.className = 'filter-opt'; row.htmlFor = id;
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = id; cb.checked = filter.names.has(name);
-      cb.addEventListener('change', () => { cb.checked ? filter.names.add(name) : filter.names.delete(name); renderCards(); });
-      row.appendChild(cb); row.appendChild(document.createTextNode(name));
-      namesBox.appendChild(row);
+    
+    Array.from(namesSet).sort().forEach((name) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (filter.course === name) opt.selected = true;
+      selectCourse.appendChild(opt);
     });
+    
+    $('filterSelectType').value = filter.type;
   }
 
   $('btnFilter').addEventListener('click', () => { refreshFilterOptions(); $('filterPanel').classList.toggle('open'); });
-  $('btnFilterClose').addEventListener('click', () => $('filterPanel').classList.remove('open'));
-  $('btnFilterReset').addEventListener('click', () => { filter.types.clear(); filter.names.clear(); refreshFilterOptions(); renderCards(); });
+  $('btnFilterApply').addEventListener('click', () => {
+    filter.course = $('filterSelectCourse').value;
+    filter.type = $('filterSelectType').value;
+    renderCards();
+    $('filterPanel').classList.remove('open');
+  });
+  $('btnFilterClear').addEventListener('click', () => {
+    filter.course = '';
+    filter.type = '';
+    refreshFilterOptions();
+    renderCards();
+    $('filterPanel').classList.remove('open');
+  });
 
   function fillRangeSelects() {
     [$('rangeFrom'), $('rangeTo')].forEach((sel) => {
@@ -715,7 +762,7 @@ onAuthStateChanged(auth, (user) => {
     applyRange();
   });
 
-  function isModalOpen() { return $('courseModal').style.display === 'flex'; }
+  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').style.display === 'flex'; }
 
   function fillCoursesDatalist() {
     const list = $('coursesDatalist'); list.innerHTML = '';
@@ -810,7 +857,7 @@ onAuthStateChanged(auth, (user) => {
   $('courseModal').addEventListener('click', (e) => { if (e.target === $('courseModal')) closeModal(); });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { if (isModalOpen()) closeModal(); $('filterPanel').classList.remove('open'); return; }
+    if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
 
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       if (isModalOpen()) return;
@@ -835,7 +882,7 @@ onAuthStateChanged(auth, (user) => {
       if (it) { copiedBuffer = { title: it.title, subtitle: it.subtitle, type: it.type, loc: it.loc, duration: it.duration }; toast('Cours copié.'); }
     } else if (key === 'v' && copiedBuffer) {
       e.preventDefault();
-      const err = placementError(hovered.week, hovered.day, hovered.hour, copiedBuffer.duration, null);
+      const err = placementError(hovered.week, hovered.hour, copiedBuffer.duration, null);
       if (err) { toast(err); return; }
       courses[hovered.week].push({ id: uid(), day: hovered.day, hour: hovered.hour, duration: copiedBuffer.duration, title: copiedBuffer.title, subtitle: copiedBuffer.subtitle, type: copiedBuffer.type, loc: copiedBuffer.loc });
       saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
@@ -1086,7 +1133,6 @@ onAuthStateChanged(auth, (user) => {
     fs.setDoc(fs.doc(fs.db, 'users', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll()))
       .then(() => {
         setSaveStatus('saved', 'Enregistré');
-        if (shareEnabled) mirrorToShared();
       })
       .catch(() => setSaveStatus('error', 'Échec de sauvegarde'));
   }
@@ -1132,27 +1178,60 @@ onAuthStateChanged(auth, (user) => {
     window.__offlineChoice = true; cloudUser = null; setSaveStatus('offline', 'Hors ligne (non sauvegardé en ligne)');
   });
 
-  let shareEnabled = false;
-  function mirrorToShared() {
-    if (!cloudUser) return;
-    const fs = window.__fs;
-    fs.setDoc(fs.doc(fs.db, 'shared', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll())).catch(() => {});
-  }
+  // GESTION DU BOUTON PARTAGER (LIEN OU PDF)
   $('btnShare').addEventListener('click', () => {
-    if (!cloudUser) { toast('Connectez-vous pour partager votre emploi du temps.'); return; }
-    if (!shareEnabled) {
-      shareEnabled = true; mirrorToShared();
-      const url = location.origin + location.pathname + '?share=' + encodeURIComponent(cloudUser.uid);
-      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
-      toast('Lien copié : ' + url);
-      $('btnShare').textContent = 'Partage (cliquer pour arrêter)';
-    } else {
-      shareEnabled = false;
-      const fs = window.__fs;
-      fs.deleteDoc(fs.doc(fs.db, 'shared', cloudUser.uid)).catch(() => {});
-      toast('Partage désactivé.');
-      $('btnShare').textContent = 'Partager';
+    $('shareModal').style.display = 'flex';
+  });
+
+  $('btnShareClose').addEventListener('click', () => {
+    $('shareModal').style.display = 'none';
+  });
+
+  $('btnShareLink').addEventListener('click', async () => {
+    $('shareModal').style.display = 'none';
+    if (!cloudUser) { 
+      toast('Connectez-vous pour générer un lien de partage cloud.'); 
+      return; 
     }
+    const fs = window.__fs;
+    try {
+      await fs.setDoc(fs.doc(fs.db, 'shared', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll()));
+      const url = location.origin + location.pathname + '?share=' + encodeURIComponent(cloudUser.uid);
+      if (navigator.clipboard) await navigator.clipboard.writeText(url);
+      toast('Lien de partage copié dans le presse-papier !');
+    } catch (e) {
+      toast('Erreur lors de la création du lien de partage.');
+    }
+  });
+
+  $('btnSharePDF').addEventListener('click', () => {
+    $('shareModal').style.display = 'none';
+    toast('Génération du PDF en cours...');
+    
+    // Cacher temporairement les éléments inutiles pour le PDF
+    const toolbar = document.querySelector('.controls-box');
+    const rangeBar = document.querySelector('.range-bar');
+    toolbar.style.display = 'none';
+    rangeBar.style.display = 'none';
+
+    const element = document.getElementById('weeksWrapper');
+    const opt = {
+      margin:       5,
+      filename:     'emploi-du-temps.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    html2pdf().from(element).set(opt).save().then(() => {
+      toolbar.style.display = 'flex';
+      rangeBar.style.display = 'flex';
+      toast('PDF téléchargé avec succès !');
+    }).catch(() => {
+      toolbar.style.display = 'flex';
+      rangeBar.style.display = 'flex';
+      toast('Erreur lors de la génération du PDF.');
+    });
   });
 
   function applyViewOnlyUI() {
@@ -1203,8 +1282,10 @@ onAuthStateChanged(auth, (user) => {
     const shared = tryEnterShareView();
     applyRange();
     if (!shared) {
-      currentVisibleWeek = getCurrentWeekKey(); 
-      weekSelect.value = currentVisibleWeek;
+      // POSITIONNEMENT AUTOMATIQUE ROBUSTE SUR LA SEMAINE ACTUELLE
+      const targetWeek = getCurrentWeekKey();
+      currentVisibleWeek = targetWeek; 
+      weekSelect.value = targetWeek;
       resizeCanvas(); 
       setTimeout(() => {
         scrollToSelectedWeek();
