@@ -1,1398 +1,1219 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Mon Emploi du Temps XL</title>
-  <style>
-    :root {
-      --bg-theorie: #8bb0e8;
-      --bg-labo: #c5fa79;
-      --bg-exercices: #98d380;
-      --bg-etude: #ff9999;
-      --border-color: #cccccc;
-      --row-height: calc((100vh - 72px) / 12);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mon Emploi du Temps XL</title>
+<style>
+:root {
+  --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
+  --border-color:#cccccc; --row-height:56px;
+}
+* { box-sizing:border-box; }
+html,body{
+  width:100%; height:100%; margin:0; padding:0;
+  font-family:Arial,sans-serif; background:#fff; overflow:hidden;
+}
+body{ display:flex; flex-direction:column; }
 
-    * { box-sizing: border-box; }
+.auth-overlay{
+  position:fixed; inset:0; background:#f4f6f9; display:flex; justify-content:center; align-items:center; z-index:3000;
+}
+.auth-card{ background:#fff; padding:24px; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,.15); width:320px; max-width:92vw; display:flex; flex-direction:column; gap:10px; }
+.auth-card h2{ margin:0 0 4px; color:#333; text-align:center; font-size:16px; }
+.auth-card input{ padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; }
+.auth-card button{ padding:8px; border:none; border-radius:4px; font-weight:bold; background:#007bff; color:#fff; cursor:pointer; font-size:13px; }
+.link-btn{ background:none!important; border:none; color:#007bff!important; cursor:pointer; font-size:11px; text-decoration:underline; padding:0!important; text-align:center; }
+.auth-msg{ font-size:11px; text-align:center; margin:0; min-height:1.4em; }
+.auth-msg.error{ color:#b02a37; }
+.auth-msg.ok{ color:#1a7431; }
+.auth-skip{ text-align:center; margin-top:4px; }
 
-    html, body {
-      width: 100%;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background-color: #ffffff;
-      overflow: hidden;
-    }
+.controls-box{
+  background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:32px; width:100%;
+  display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; flex:0 0 auto; z-index:20;
+}
+.controls-group{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+.controls-box select{ padding:2px 4px; font-size:11px; font-weight:bold; border-radius:3px; border:1px solid #ccc; background:#fff; color:#333; height:24px; }
+.btn-action{
+  padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:none; cursor:pointer; color:#fff;
+  display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap;
+}
+.btn-draw{ background:#6f42c1; } .btn-copy{ background:#007bff; } .btn-clear{ background:#dc3545; }
+.btn-export{ background:#20c997; color:#111; } .btn-import{ background:#17a2b8; }
+.btn-logout{ background:#6c757d; } .btn-config{ background:#343a40; } .btn-history{ background:#495057; }
+.btn-filter{ background:#e8590c; } .btn-share{ background:#0ca678; }
+.btn-active{ outline:2px solid #333; box-shadow:0 0 4px rgba(0,0,0,.5); }
+.btn-action:disabled{ opacity:.4; cursor:not-allowed; }
+.save-status{ font-size:10.5px; color:#666; white-space:nowrap; display:flex; align-items:center; gap:4px; }
+.save-dot{ width:7px; height:7px; border-radius:50%; background:#adb5bd; flex:none; }
+.save-dot.saving{ background:#f0ad4e; }
+.save-dot.saved{ background:#28a745; }
+.save-dot.error{ background:#dc3545; }
+.save-dot.offline{ background:#6c757d; }
 
-    /* AUTHENTIFICATION */
-    .auth-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: #f4f6f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-    }
+.range-bar{
+  display:flex; align-items:center; gap:6px; padding:4px 8px; background:#f8f9fa; border-bottom:1px solid #e0e0e0;
+  font-size:11px; font-weight:bold; color:#333; flex:0 0 auto; flex-wrap:wrap;
+}
+.range-bar select{ font-size:11px; padding:2px 4px; border-radius:3px; border:1px solid #ccc; }
+.viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; }
 
-    .auth-card {
-      background: white;
-      padding: 24px;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      width: 320px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+.filter-panel{
+  position:fixed; top:64px; right:10px; background:#fff; border:1px solid #ccc; border-radius:6px;
+  box-shadow:0 4px 16px rgba(0,0,0,.2); padding:10px; width:260px; max-height:70vh; overflow:auto; z-index:120; display:none;
+}
+.filter-panel.open{ display:block; }
+.filter-panel h4{ margin:0 0 6px; font-size:12px; }
+.filter-group{ margin-bottom:10px; }
+.filter-opt{ display:flex; align-items:center; gap:6px; font-size:11.5px; padding:2px 0; }
+.filter-actions{ display:flex; justify-content:space-between; gap:6px; margin-top:6px; }
+.filter-actions button{ font-size:11px; }
 
-    .auth-card h2 { margin: 0 0 8px 0; color: #333; text-align: center; font-size: 16px; }
-    .auth-card input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
-    .auth-card button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; background: #007bff; color: white; cursor: pointer; font-size: 12px; }
-    .switch-mode { text-align: center; color: #007bff; cursor: pointer; font-size: 11px; text-decoration: underline; }
+.drawing-toolbar{
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(30,30,30,.9);
+  padding:8px 14px; border-radius:30px; display:none; align-items:center; gap:10px; z-index:100;
+  box-shadow:0 4px 15px rgba(0,0,0,.3); backdrop-filter:blur(5px);
+}
+.drawing-toolbar.active{ display:flex; }
+.tool-btn{ background:transparent; border:none; color:#fff; font-size:16px; cursor:pointer; padding:6px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+.tool-btn:hover{ background:rgba(255,255,255,.2); }
+.tool-btn.selected{ background:rgba(255,255,255,.35); box-shadow:0 0 0 2px #007bff; }
+.tool-color-picker{ width:24px; height:24px; border:none; border-radius:50%; cursor:pointer; background:transparent; }
 
-    /* BARRE DE CONTROLE DU HAUT */
-    .controls-box {
-      background: #ffffff;
-      border-bottom: 1px solid #e0e0e0;
-      padding: 2px 8px;
-      height: 32px;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 20;
-    }
+.timetable-container{ width:100%; flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; background:#fff; position:relative; }
+#drawingCanvas{ position:absolute; top:0; left:0; z-index:5; pointer-events:none; }
+#drawingCanvas.active{ pointer-events:auto; z-index:25; cursor:crosshair; touch-action:none; }
+.now-line{ position:absolute; height:2px; background:#e8590c; z-index:8; pointer-events:none; border-radius:1px; }
+.now-line::before{ content:""; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#e8590c; }
 
-    .controls-group {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
+.week-block{ margin-bottom:20px; }
+.week-block.hidden-range{ display:none; }
+.week-divider{ height:20px; }
 
-    .controls-box select {
-      padding: 2px 4px;
-      font-size: 11px;
-      font-weight: bold;
-      border-radius: 3px;
-      border: 1px solid #ccc;
-      background: white;
-      color: #333;
-      height: 24px;
-    }
+.header-row{
+  display:grid; grid-template-columns:55px repeat(7,1fr); position:sticky; top:0; z-index:10;
+  background:#fff; color:#111; height:22px; border-bottom:2px solid #ccc; border-top:1px solid #e0e0e0;
+}
+.header-cell{ border-right:1px solid #e0e0e0; font-weight:bold; display:flex; align-items:center; justify-content:center; font-size:11px; padding:0 2px; overflow:hidden; }
 
-    .btn-action {
-      padding: 2px 6px;
-      font-size: 11px;
-      font-weight: bold;
-      border-radius: 3px;
-      border: none;
-      cursor: pointer;
-      color: white;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      height: 24px;
-      white-space: nowrap;
-    }
+.timetable-body{ display:grid; grid-template-columns:55px repeat(7,1fr); grid-template-rows:repeat(12,var(--row-height)); }
+.time-cell,.slot{ border-bottom:1px solid var(--border-color); border-right:1px solid var(--border-color); }
+.time-cell{ background:#f8f9fa; font-size:10px; padding:2px 4px; color:#333; font-weight:bold; display:flex; align-items:flex-start; }
+.slot{ position:relative; cursor:pointer; z-index:2; }
+.slot.drag-over{ background:#e2e8f0; border:2px dashed #007bff; }
+.slot:hover{ background:#f9f9f9; }
+.slot.view-only{ cursor:default; }
 
-    .btn-draw { background: #6f42c1; }
-    .btn-copy { background: #007bff; }
-    .btn-clear { background: #dc3545; }
-    .btn-export { background: #20c997; }
-    .btn-import { background: #17a2b8; }
-    .btn-save-cloud { background: #28a745; }
-    .btn-logout { background: #6c757d; }
-    .btn-config { background: #343a40; }
-    .btn-history { background: #495057; }
-    .btn-active { outline: 2px solid #333; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
+.course-card{
+  position:absolute; top:1px; left:1px; right:1px; border-radius:2px; padding:2px 4px; color:#111; overflow:hidden;
+  border:1px solid rgba(0,0,0,.15); z-index:6; display:flex; flex-direction:column; justify-content:space-between;
+  cursor:grab; user-select:none; transition:opacity .15s;
+}
+.course-card:active{ cursor:grabbing; opacity:.7; }
+.course-card.dimmed{ opacity:.12; }
+.course-card.theorie{ background:var(--bg-theorie); } .course-card.exercices{ background:var(--bg-exercices); }
+.course-card.labo{ background:var(--bg-labo); } .course-card.etude{ background:var(--bg-etude); }
+.course-card .header-title{ font-weight:bold; font-size:9.5px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.course-card .subtitle{ font-size:8.5px; line-height:1.1; color:#222; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.course-card .location{ font-size:8px; font-weight:bold; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* BARRE D'OUTILS DE DESSIN FLOTTANTE (STYLE TÉLÉPHONE) */
-    .drawing-toolbar {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(30, 30, 30, 0.9);
-      padding: 8px 14px;
-      border-radius: 30px;
-      display: none;
-      align-items: center;
-      gap: 10px;
-      z-index: 100;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      backdrop-filter: blur(5px);
-    }
+.modal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); justify-content:center; align-items:center; z-index:1000; }
+.modal-content{ background:#fff; padding:15px; border-radius:6px; width:320px; max-width:92vw; max-height:92vh; overflow:auto; display:flex; flex-direction:column; gap:8px; font-size:11px; }
+.modal-content label{ display:block; margin:2px 0; }
+.modal-content input,.modal-content select,.modal-content textarea{ padding:5px; font-size:11px; border:1px solid #ccc; border-radius:3px; width:100%; }
+.modal-error{ color:#b02a37; font-weight:bold; min-height:1.2em; font-size:11px; }
+.modal-hint{ color:#666; font-size:10px; margin:0; }
+.btn-group{ display:flex; gap:4px; flex-wrap:wrap; justify-content:space-between; margin-top:6px; }
+.btn-save{ background:#28a745; color:#fff; } .btn-delete{ background:#dc3545; color:#fff; } .btn-cancel{ background:#6c757d; color:#fff; }
+.btn-modal-copy{ background:#17a2b8; color:#fff; } .btn-modal-paste{ background:#fd7e14; color:#fff; }
 
-    .drawing-toolbar.active {
-      display: flex;
-    }
-
-    .tool-btn {
-      background: transparent;
-      border: none;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    .tool-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .tool-btn.selected {
-      background: rgba(255, 255, 255, 0.35);
-      box-shadow: 0 0 0 2px #007bff;
-    }
-
-    .tool-color-picker {
-      width: 24px;
-      height: 24px;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      background: transparent;
-    }
-
-    /* CONTENEUR ET GRILLE */
-    .timetable-container {
-      width: 100vw;
-      height: calc(100vh - 32px);
-      overflow-y: auto;
-      background-color: white;
-      position: relative;
-    }
-
-    #drawingCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    #drawingCanvas.active {
-      pointer-events: auto;
-      z-index: 25;
-      cursor: crosshair;
-    }
-
-    .week-block {
-      margin-bottom: 20px;
-    }
-
-    .week-divider {
-      height: 45px;
-      background-color: #ffffff;
-      border: none;
-    }
-
-    .header-row {
-      display: grid;
-      grid-template-columns: 55px repeat(7, 1fr);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background-color: #ffffff;
-      color: #111111;
-      height: 22px;
-      border-bottom: 2px solid #cccccc;
-      border-top: 1px solid #e0e0e0;
-    }
-
-    .header-cell {
-      border-right: 1px solid #e0e0e0;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-    }
-
-    .timetable-body {
-      display: grid;
-      grid-template-columns: 55px repeat(7, 1fr);
-      grid-template-rows: repeat(12, var(--row-height));
-    }
-
-    .time-cell, .slot {
-      border-bottom: 1px solid var(--border-color);
-      border-right: 1px solid var(--border-color);
-    }
-
-    .time-cell {
-      background-color: #f8f9fa;
-      font-size: 10px;
-      padding: 2px 4px;
-      color: #333;
-      font-weight: bold;
-      display: flex;
-      align-items: flex-start;
-    }
-
-    .slot { position: relative; cursor: pointer; touch-action: none; z-index: 2; }
-    .slot.drag-over { background-color: #e2e8f0; border: 2px dashed #007bff; }
-    .slot:hover { background-color: #f9f9f9; }
-
-    /* CARTES DE COURS */
-    .course-card {
-      position: absolute;
-      top: 1px; left: 1px; right: 1px;
-      border-radius: 2px;
-      padding: 2px 4px;
-      color: #111;
-      overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.15);
-      z-index: 6;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      cursor: grab;
-      user-select: none;
-      touch-action: none;
-    }
-
-    .course-card:active { cursor: grabbing; opacity: 0.7; }
-    .course-card.theorie { background-color: var(--bg-theorie); }
-    .course-card.exercices { background-color: var(--bg-exercices); }
-    .course-card.labo { background-color: var(--bg-labo); }
-    .course-card.etude { background-color: var(--bg-etude); }
-
-    .course-card .header-title { font-weight: bold; font-size: 9.5px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .course-card .subtitle { font-size: 8.5px; line-height: 1.1; color: #222222; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .course-card .location { font-size: 8px; font-weight: bold; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* MODALE COURS */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 15px;
-      border-radius: 6px;
-      width: 320px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      font-size: 11px;
-    }
-
-    .modal-content input, .modal-content select, .modal-content textarea {
-      padding: 5px;
-      font-size: 11px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      width: 100%;
-    }
-
-    .btn-group { display: flex; gap: 4px; flex-wrap: wrap; justify-content: space-between; margin-top: 6px; }
-    .btn-save { background: #28a745; color: white; }
-    .btn-delete { background: #dc3545; color: white; }
-    .btn-cancel { background: #6c757d; color: white; }
-    .btn-modal-copy { background: #17a2b8; color: white; }
-    .btn-modal-paste { background: #fd7e14; color: white; }
-  </style>
+.toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#212529; color:#fff; padding:10px 18px; border-radius:6px; font-size:13px; max-width:92vw; z-index:2500; opacity:0; pointer-events:none; transition:opacity .2s; }
+.toast.show{ opacity:1; }
+</style>
 </head>
 <body>
-
-  <!-- AUTHENTIFICATION FIREBASE -->
-  <div id="authOverlay" class="auth-overlay">
-    <div class="auth-card">
-      <h2 id="authTitle">Connexion</h2>
-      <input type="email" id="email" placeholder="Adresse e-mail">
-      <input type="password" id="password" placeholder="Mot de passe">
-      <button id="btnAuth" onclick="handleAuth()">Se connecter</button>
-      <p id="authError" style="color: red; font-size: 11px; text-align: center; margin: 0;"></p>
-      <div class="switch-mode" id="switchText" onclick="toggleAuthMode()">Pas encore de compte ? S'inscrire</div>
-    </div>
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <h2 id="authTitle">Connexion</h2>
+    <input type="email" id="email" placeholder="Adresse e-mail" autocomplete="email">
+    <input type="password" id="password" placeholder="Mot de passe" autocomplete="current-password">
+    <button id="btnAuth" type="button">Se connecter</button>
+    <button id="btnForgot" type="button" class="link-btn">Mot de passe oublié ?</button>
+    <p id="authMsg" class="auth-msg"></p>
+    <div class="link-btn" id="switchText" style="text-align:center;">Pas encore de compte ? S'inscrire</div>
+    <div class="auth-skip"><button id="btnSkip" type="button" class="link-btn">Continuer hors ligne (sans compte)</button></div>
   </div>
+</div>
 
-  <!-- BARRE DE CONTROLE DU HAUT -->
-  <div class="controls-box">
-    <div class="controls-group">
-      <select id="selectWeek" onchange="scrollToSelectedWeek()"></select>
-    </div>
-
-    <div class="controls-group">
-      <button id="btnPencil" class="btn-action btn-draw" onclick="toggleDrawingMode()">✏️ Dessiner</button>
-      <button class="btn-action btn-history" onclick="undoGlobal()" title="Annuler">↩️</button>
-      <button class="btn-action btn-history" onclick="redoGlobal()" title="Rétablir">↪️</button>
-    </div>
-
-    <div class="controls-group">
-      <button class="btn-action btn-config" onclick="openConfigModal('courses')">⚙️ Cours</button>
-      <button class="btn-action btn-config" onclick="openConfigModal('locations')">⚙️ Locaux</button>
-      <button class="btn-action btn-copy" onclick="copyPreviousWeek()">📋 Copier Préc.</button>
-      <button class="btn-action btn-clear" onclick="clearCurrentWeek()">🗑️ Effacer Semaine</button>
-      <button class="btn-action btn-export" onclick="exportData()">💾 Exporter</button>
-      <button class="btn-action btn-import" onclick="document.getElementById('importFile').click()">📂 Importer</button>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-      <button class="btn-action btn-save-cloud" onclick="saveDataToCloud()">☁️ Sauvegarder</button>
-      <button class="btn-action btn-logout" onclick="logout()">🚪</button>
-    </div>
+<div class="controls-box">
+  <div class="controls-group">
+    <select id="selectWeek" aria-label="Aller à la semaine"></select>
+    <span id="viewOnlyBadge" class="viewonly-badge" style="display:none;">👁️ Lecture seule</span>
   </div>
-
-  <!-- BARRE D'OUTILS DE DESSIN FLOTTANTE (STYLE TÉLÉPHONE) -->
-  <div id="drawingToolbar" class="drawing-toolbar">
-    <button id="toolPen" class="tool-btn selected" title="Crayon" onclick="setDrawingTool('pen')">✏️</button>
-    <button id="toolHighlighter" class="tool-btn" title="Surligneur" onclick="setDrawingTool('highlighter')">🖍️</button>
-    <button id="toolEraser" class="tool-btn" title="Gomme" onclick="setDrawingTool('eraser')">🧹</button>
-    <input type="color" id="toolColor" class="tool-color-picker" value="#dc3545" title="Couleur du tracé">
-    <button class="tool-btn" title="Tout effacer" onclick="clearCanvas()">🗑️</button>
+  <div class="controls-group" id="editGroup1">
+    <button id="btnPencil" class="btn-action btn-draw">✏️ Dessiner</button>
+    <button id="btnUndo" class="btn-action btn-history" title="Annuler (Ctrl+Z)">↩️</button>
+    <button id="btnRedo" class="btn-action btn-history" title="Rétablir (Ctrl+Y)">↪️</button>
+    <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
   </div>
-
-  <div class="timetable-container" id="scrollContainer">
-    <canvas id="drawingCanvas"></canvas>
-    <div id="weeksWrapper"></div>
+  <div class="controls-group" id="editGroup2">
+    <button id="btnConfigCourses" class="btn-action btn-config">⚙️ Cours</button>
+    <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
+    <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
+    <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
+    <button id="btnExport" class="btn-action btn-export">💾 Exporter</button>
+    <button id="btnImport" class="btn-action btn-import">📂 Importer</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <button id="btnShare" class="btn-action btn-share">🔗 Partager</button>
+    <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
+    <button id="btnLogout" class="btn-action btn-logout">🚪</button>
   </div>
+</div>
 
-  <!-- MODALE EDITION ACTIVITÉ -->
-  <div class="modal" id="courseModal">
-    <div class="modal-content">
-      <h3 id="modalTitle" style="margin:0 0 5px 0;">Détails de l'activité</h3>
-      
-      <label>Code / Type de cours :</label>
-      <input type="text" id="courseSearch" list="coursesDatalist" placeholder="Ex: ELECH3001 - Théorie">
+<div class="range-bar">
+  <span>Afficher du</span>
+  <select id="rangeFrom" aria-label="Semaine de début"></select>
+  <span>au</span>
+  <select id="rangeTo" aria-label="Semaine de fin"></select>
+  <button id="btnRangeAll" class="btn-action btn-copy" style="height:20px;">Tout afficher</button>
+</div>
+
+<div id="drawingToolbar" class="drawing-toolbar">
+  <button id="toolPen" class="tool-btn selected" title="Crayon">✏️</button>
+  <button id="toolHighlighter" class="tool-btn" title="Surligneur">🖍️</button>
+  <button id="toolEraser" class="tool-btn" title="Gomme">🧹</button>
+  <input type="color" id="toolColor" class="tool-color-picker" value="#dc3545" title="Couleur du tracé">
+  <button id="btnClearCanvas" class="tool-btn" title="Effacer cette semaine">🗑️</button>
+</div>
+
+<div id="filterPanel" class="filter-panel">
+  <h4>Filtrer par type</h4>
+  <div class="filter-group" id="filterTypes"></div>
+  <h4>Filtrer par cours</h4>
+  <div class="filter-group" id="filterNames"></div>
+  <div class="filter-actions">
+    <button id="btnFilterReset" class="btn-action btn-cancel">Réinitialiser</button>
+    <button id="btnFilterClose" class="btn-action btn-save">Fermer</button>
+  </div>
+</div>
+
+<div class="timetable-container" id="scrollContainer">
+  <canvas id="drawingCanvas"></canvas>
+  <div id="weeksWrapper"></div>
+</div>
+
+<div class="modal" id="courseModal" role="dialog" aria-modal="true">
+  <div class="modal-content">
+    <h3 style="margin:0 0 4px;">Détails de l'activité</h3>
+    <div>
+      <label for="courseSearch">Code / Nom du cours :</label>
+      <input type="text" id="courseSearch" list="coursesDatalist" placeholder="Ex: ELECH3001 - Théorie" autocomplete="off">
       <datalist id="coursesDatalist"></datalist>
-
-      <label>Nom / Intitulé du cours :</label>
-      <input type="text" id="courseSubTitle" placeholder="Ex: Électricité appliquée">
-
-      <label>Durée :</label>
+    </div>
+    <div>
+      <label for="courseSubTitle">Intitulé complet :</label>
+      <input type="text" id="courseSubTitle" placeholder="Ex: Électricité appliquée" autocomplete="off">
+    </div>
+    <div>
+      <label for="courseDuration">Durée :</label>
       <select id="courseDuration">
-        <option value="1">1 heure</option>
-        <option value="2" selected>2 heures</option>
-        <option value="3">3 heures</option>
-        <option value="4">4 heures</option>
+        <option value="1">1 heure</option><option value="2" selected>2 heures</option>
+        <option value="3">3 heures</option><option value="4">4 heures</option>
       </select>
-
-      <label>Type / Couleur :</label>
+    </div>
+    <div>
+      <label for="courseType">Type / Couleur :</label>
       <select id="courseType">
         <option value="theorie">Théorie (Bleu)</option>
         <option value="exercices">Exercices / TP (Vert Moyen)</option>
         <option value="labo">Laboratoire / Pratique (Vert Clair)</option>
         <option value="etude">Étude / Perso (Rouge)</option>
       </select>
-
-      <label>Local / Lieu :</label>
-      <input type="text" id="courseLocation" list="locationsList" placeholder="Ex: Auditoire FERRER...">
+    </div>
+    <div>
+      <label for="courseLocation">Local / Lieu :</label>
+      <input type="text" id="courseLocation" list="locationsList" placeholder="Ex: Auditoire FERRER..." autocomplete="off">
       <datalist id="locationsList"></datalist>
-
-      <div class="btn-group">
-        <button class="btn-action btn-save" onclick="saveCourse()">Enregistrer</button>
-        <button id="btnModalCopy" class="btn-action btn-modal-copy" onclick="copyCurrentCourseModal()">📋 Copier</button>
-        <button id="btnModalPaste" class="btn-action btn-modal-paste" onclick="pasteCourseModal()" style="display:none;">📋 Coller</button>
-        <button class="btn-action btn-delete" onclick="deleteCourse()">Supprimer</button>
-        <button class="btn-action btn-cancel" onclick="closeModal()">Annuler</button>
-      </div>
+    </div>
+    <div id="modalError" class="modal-error" role="alert"></div>
+    <div class="btn-group">
+      <button id="btnSaveCourse" class="btn-action btn-save">Enregistrer</button>
+      <button id="btnModalCopy" class="btn-action btn-modal-copy">📋 Copier</button>
+      <button id="btnModalPaste" class="btn-action btn-modal-paste" style="display:none;">📋 Coller</button>
+      <button id="btnDeleteCourse" class="btn-action btn-delete">Supprimer</button>
+      <button id="btnCancelCourse" class="btn-action btn-cancel">Annuler</button>
     </div>
   </div>
+</div>
 
-  <!-- MODALE GESTION GLOBALE (COURS / LOCAUX) -->
-  <div class="modal" id="configModal">
-    <div class="modal-content" style="width: 360px;">
-      <h3 id="configModalTitle" style="margin:0 0 5px 0;">Gestion</h3>
-      <p id="configModalDesc" style="margin:0; font-size:10px; color:#555;"></p>
-      
-      <textarea id="configTextarea" rows="8" placeholder="Entrez un élément par ligne..."></textarea>
-
-      <div class="btn-group">
-        <button class="btn-action btn-save" onclick="saveConfigModal()">Mettre à jour</button>
-        <button class="btn-action btn-cancel" onclick="closeConfigModal()">Fermer</button>
-      </div>
+<div class="modal" id="configModal" role="dialog" aria-modal="true">
+  <div class="modal-content" style="width:380px;">
+    <h3 id="configModalTitle" style="margin:0 0 4px;">Gestion</h3>
+    <p id="configModalDesc" class="modal-hint"></p>
+    <textarea id="configTextarea" rows="10" placeholder="Un élément par ligne..."></textarea>
+    <div id="configError" class="modal-error" role="alert"></div>
+    <div class="btn-group">
+      <button id="btnSaveConfig" class="btn-action btn-save">Mettre à jour</button>
+      <button id="btnCloseConfig" class="btn-action btn-cancel">Fermer</button>
     </div>
   </div>
+</div>
 
-  <!-- FIREBASE CONFIGURATION -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyADndGQPP7OjP0pK1wqfeZrdZQ84_iLrys",
-      authDomain: "emploi-du-temps-2ffd6.firebaseapp.com",
-      projectId: "emploi-du-temps-2ffd6",
-      storageBucket: "emploi-du-temps-2ffd6.firebasestorage.app",
-      messagingSenderId: "897752698709",
-      appId: "1:897752698709:web:a1ac2f8be097f3ad6a69dc"
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+  onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, getDoc, deleteDoc, enableIndexedDbPersistence
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyADndGQPP7OjP0pK1wqfeZrdZQ84_iLrys",
+  authDomain: "emploi-du-temps-2ffd6.firebaseapp.com",
+  projectId: "emploi-du-temps-2ffd6",
+  storageBucket: "emploi-du-temps-2ffd6.firebasestorage.app",
+  messagingSenderId: "897752698709",
+  appId: "1:897752698709:web:a1ac2f8be097f3ad6a69dc"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+try { enableIndexedDbPersistence(db); } catch (e) { }
+
+window.__auth = auth;
+window.__fs = { doc, setDoc, getDoc, deleteDoc, db };
+
+let isSignUpMode = false;
+
+function setAuthMsg(text, kind) {
+  const el = document.getElementById('authMsg');
+  el.textContent = text || '';
+  el.className = 'auth-msg' + (kind ? ' ' + kind : '');
+}
+
+function translateAuthError(code) {
+  const map = {
+    'auth/invalid-email': "Adresse e-mail invalide.",
+    'auth/user-not-found': "Aucun compte avec cette adresse.",
+    'auth/wrong-password': "Mot de passe incorrect.",
+    'auth/invalid-credential': "Identifiants incorrects.",
+    'auth/email-already-in-use': "Un compte existe déjà avec cette adresse.",
+    'auth/weak-password': "Mot de passe trop court (6 caractères minimum).",
+    'auth/too-many-requests': "Trop de tentatives, réessayez plus tard.",
+    'auth/network-request-failed': "Pas de connexion internet."
+  };
+  return map[code] || "Une erreur est survenue.";
+}
+
+document.getElementById('switchText').addEventListener('click', () => {
+  isSignUpMode = !isSignUpMode;
+  document.getElementById('authTitle').textContent = isSignUpMode ? "Créer un compte" : "Connexion";
+  document.getElementById('btnAuth').textContent = isSignUpMode ? "S'inscrire" : "Se connecter";
+  document.getElementById('switchText').textContent = isSignUpMode ? "Déjà un compte ? Se connecter" : "Pas encore de compte ? S'inscrire";
+  setAuthMsg('');
+});
+
+document.getElementById('btnAuth').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  setAuthMsg('');
+  if (!email || !password) { setAuthMsg("Indiquez une adresse e-mail et un mot de passe.", 'error'); return; }
+  try {
+    if (isSignUpMode) {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      sendEmailVerification(cred.user).catch(() => {});
+      setAuthMsg("Compte créé. Un e-mail de vérification vous a été envoyé.", 'ok');
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  } catch (e) {
+    setAuthMsg(translateAuthError(e.code), 'error');
+  }
+});
+
+document.getElementById('btnForgot').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  if (!email) { setAuthMsg("Indiquez votre adresse e-mail ci-dessus, puis cliquez à nouveau.", 'error'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    setAuthMsg("E-mail de réinitialisation envoyé.", 'ok');
+  } catch (e) {
+    setAuthMsg(translateAuthError(e.code), 'error');
+  }
+});
+
+document.getElementById('btnSkip').addEventListener('click', () => {
+  document.getElementById('authOverlay').style.display = 'none';
+  window.dispatchEvent(new CustomEvent('app:offline-mode'));
+});
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  window.dispatchEvent(new CustomEvent('app:before-logout'));
+  signOut(auth);
+});
+
+onAuthStateChanged(auth, (user) => {
+  const overlay = document.getElementById('authOverlay');
+  if (user && !user.isAnonymous) {
+    overlay.style.display = 'none';
+    window.dispatchEvent(new CustomEvent('app:signed-in', { detail: { uid: user.uid, email: user.email } }));
+  } else {
+    window.dispatchEvent(new CustomEvent('app:signed-out'));
+    if (!window.__offlineChoice) overlay.style.display = 'flex';
+  }
+});
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    startDateS1: new Date(2026, 8, 14),
+    weeks: 14,
+    hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"],
+    defaultCatalog: [
+      { name:"ELECH3001 - Théorie", type:"theorie", subtitle:"Électricité appliquée" },
+      { name:"ELECH3001 - Exercices 1", type:"exercices", subtitle:"Électricité appliquée" },
+      { name:"ELECH3001 - Exercices 2", type:"exercices", subtitle:"Électricité appliquée" },
+      { name:"ELECH3001 - Laboratoire", type:"labo", subtitle:"Électricité appliquée" },
+      { name:"MATHH2000 - Théorie", type:"theorie", subtitle:"Analyse II" },
+      { name:"MATHH2000 - Exercices", type:"exercices", subtitle:"Analyse II" },
+      { name:"MATHH2002 - Théorie", type:"theorie", subtitle:"Calcul des probabilités et statistiques" },
+      { name:"MATHH2002 - Exercices", type:"exercices", subtitle:"Calcul des probabilités et statistiques" },
+      { name:"MATHH3001 - Théorie", type:"theorie", subtitle:"Signaux et systèmes" },
+      { name:"MATHH3001 - Exercices", type:"exercices", subtitle:"Signaux et systèmes" },
+      { name:"MECAH200 - Théorie", type:"theorie", subtitle:"Mécanique rationnelle II" },
+      { name:"MECAH200 - Exercices", type:"exercices", subtitle:"Mécanique rationnelle II" },
+      { name:"MECAH200 - Laboratoire", type:"labo", subtitle:"Mécanique rationnelle II" },
+      { name:"MECAH3001 - Théorie", type:"theorie", subtitle:"Fluid mechanics and transfer processes" },
+      { name:"MECAH3001 - Exercices", type:"exercices", subtitle:"Fluid mechanics and transfer processes" },
+      { name:"MECAH3001 - Anglais", type:"labo", subtitle:"Fluid mechanics and transfer processes" },
+      { name:"MECAH301 - Théorie", type:"theorie", subtitle:"Systèmes énergétiques" },
+      { name:"MECAH301 - Exercices", type:"exercices", subtitle:"Systèmes énergétiques" }
+    ],
+    defaultLocations: ["Bibliothèque","Maison","Casa","Auditoire FERRER","Auditoire GUILLISSEN","Auditoire Aretha FRANKLIN"]
+  };
+
+  const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+  const TYPES = ["theorie","exercices","labo","etude"];
+  const H = CONFIG.hours.length;
+  const LS = {
+    courses:'timetable_courses_v3', catalog:'timetable_catalog_v3', locations:'timetable_locations_v3',
+    strokes:'timetable_strokes_v3', range:'timetable_range_v3'
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const weekKey = (n) => 'S' + n;
+  const weekNum = (k) => parseInt(String(k).slice(1), 10);
+  let idc = 0; const uid = () => 'c' + (++idc) + '_' + Date.now().toString(36);
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  function readJSON(key, fallback) {
+    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; }
+    catch (e) { return fallback; }
+  }
+  function writeJSON(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (e) { toast("Stockage local plein ou bloqué. Pensez à exporter une sauvegarde."); return false; }
+  }
+
+  let courses = {};
+  let strokes = [];
+  let catalog = [];
+  let locations = [];
+  let filter = { types: new Set(), names: new Set() };
+  let range = { from: 1, to: CONFIG.weeks };
+  let hovered = null;
+  let dragged = null;
+  let modalCtx = { editing: null };
+  let currentVisibleWeek = 'S1';
+  let viewOnly = false;
+  const slotMap = {}, blocks = {}, headerRows = {};
+
+  function normalizeItem(it) {
+    const day = parseInt(it.day, 10), hour = parseInt(it.hour, 10), dur = parseInt(it.duration, 10) || 2;
+    if (!(day >= 0 && day < 7 && hour >= 0 && hour < H)) return null;
+    const title = String(it.title || '').trim().slice(0, 120);
+    if (!title) return null;
+    return {
+      id: uid(), day, hour, duration: Math.min(Math.max(dur, 1), H - hour),
+      title, subtitle: String(it.subtitle || '').slice(0, 120),
+      type: TYPES.includes(it.type) ? it.type : 'theorie',
+      loc: String(it.loc || '').slice(0, 80)
     };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    let currentUser = null;
-    let isSignUpMode = false;
-
-    window.toggleAuthMode = function() {
-      isSignUpMode = !isSignUpMode;
-      document.getElementById('authTitle').innerText = isSignUpMode ? "Créer un compte" : "Connexion";
-      document.getElementById('btnAuth').innerText = isSignUpMode ? "S'inscrire" : "Se connecter";
-      document.getElementById('switchText').innerText = isSignUpMode ? "Déjà un compte ? Se connecter" : "Pas encore de compte ? S'inscrire";
-      document.getElementById('authError').innerText = "";
-    };
-
-    window.handleAuth = async function() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const err = document.getElementById('authError');
-      err.innerText = "";
-
-      try {
-        if (isSignUpMode) {
-          await createUserWithEmailAndPassword(auth, email, password);
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-        }
-      } catch (e) {
-        err.innerText = "Erreur : " + e.message;
-      }
-    };
-
-    window.logout = function() {
-      signOut(auth);
-    };
-
-    onAuthStateChanged(auth, async (user) => {
-      const overlay = document.getElementById('authOverlay');
-      if (user) {
-        currentUser = user;
-        overlay.style.display = 'none';
-        await loadDataFromCloud();
-      } else {
-        currentUser = null;
-        overlay.style.display = 'flex';
-      }
-    });
-
-    window.saveDataToCloud = async function() {
-      if (!currentUser) return;
-      const allData = getAllWeeksData();
-      try {
-        await setDoc(doc(db, "users", currentUser.uid), {
-          timetable: allData,
-          drawings: weekDrawings,
-          locations: getStoredLocations(),
-          courses: getStoredCourses(),
-          updatedAt: new Date()
-        });
-        alert("Emploi du temps, cours et locaux sauvegardés sur le Cloud !");
-      } catch (e) {
-        alert("Erreur lors de la sauvegarde : " + e.message);
-      }
-    };
-
-    async function loadDataFromCloud() {
-      if (!currentUser) return;
-      try {
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.timetable) {
-            localStorage.setItem('timetable_multi_weeks', JSON.stringify(data.timetable));
-            loadAllWeeksData();
-          }
-          if (data.drawings) {
-            weekDrawings = data.drawings;
-            saveVectorData();
-            redrawVectorCanvas();
-          }
-          if (data.locations) {
-            localStorage.setItem('timetable_saved_locations', JSON.stringify(data.locations));
-            updateLocationsDatalist();
-          }
-          if (data.courses) {
-            localStorage.setItem('timetable_saved_courses', JSON.stringify(data.courses));
-            updateCoursesDatalist();
-          }
-          initGlobalHistory();
-        }
-      } catch (e) {
-        console.error("Erreur de chargement Cloud:", e);
-      }
+  }
+  function normalizeCourses(raw) {
+    const out = {};
+    for (let w = 1; w <= CONFIG.weeks; w++) {
+      const k = weekKey(w); out[k] = [];
+      const arr = raw && Array.isArray(raw[k]) ? raw[k] : [];
+      arr.forEach((it) => { const n = it && typeof it === 'object' ? normalizeItem(it) : null; if (n) out[k].push(n); });
     }
-  </script>
+    return out;
+  }
+  function normalizeStrokes(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((s) => {
+      if (!s || !/^S\d+$/.test(s.w)) return false;
+      const n = weekNum(s.w); if (n < 1 || n > CONFIG.weeks) return false;
+      if (s.kind !== 'pen' && s.kind !== 'highlight') return false;
+      if (!Array.isArray(s.pts) || s.pts.length < 2) return false;
+      return s.pts.every((p) => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]));
+    }).map((s) => ({ w: s.w, kind: s.kind, color: /^#[0-9a-fA-F]{3,8}$/.test(s.color) ? s.color : '#dc3545', pts: s.pts }));
+  }
+  function normalizeCatalog(raw) {
+    if (!Array.isArray(raw)) return CONFIG.defaultCatalog.slice();
+    const out = raw.filter((c) => c && typeof c.name === 'string' && c.name.trim()).map((c) => ({
+      name: c.name.trim().slice(0, 120),
+      type: TYPES.includes(c.type) ? c.type : 'theorie',
+      subtitle: String(c.subtitle || '').slice(0, 120)
+    }));
+    return out.length ? out : CONFIG.defaultCatalog.slice();
+  }
+  function normalizeLocations(raw) {
+    if (!Array.isArray(raw)) return CONFIG.defaultLocations.slice();
+    const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 80)).slice(0, 300);
+    return out.length ? out : CONFIG.defaultLocations.slice();
+  }
 
-  <!-- LOGIQUE EMPLOI DU TEMPS -->
-  <script>
-    const startDateS1 = new Date(2026, 8, 14); // 14 septembre 2026
-    const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-    let currentVisibleWeek = "S1";
-    let selectedSlot = null;
-    let draggedCardData = null;
-    let copiedCourseBuffer = null;
-    let hoveredSlot = null;
-    let currentConfigType = null;
+  function serializeAll() {
+    const out = {};
+    Object.keys(courses).forEach((k) => { out[k] = courses[k].map((c) => ({ day:c.day, hour:c.hour, duration:c.duration, title:c.title, subtitle:c.subtitle, type:c.type, loc:c.loc })); });
+    return { courses: out, strokes, catalog, locations };
+  }
+  function saveLocalAll() {
+    const s = serializeAll();
+    writeJSON(LS.courses, s.courses);
+    writeJSON(LS.strokes, s.strokes);
+    writeJSON(LS.catalog, s.catalog);
+    writeJSON(LS.locations, s.locations);
+  }
 
-    let weekDrawings = {}; 
-    let currentPath = null;
-    let isDrawingActive = false;
-    let currentTool = 'pen';
+  let history = []; let historyIndex = -1; let restoring = false;
 
-    // HISTORIQUE GLOBAL UNIFIÉ (COURS + DESSINS + LOCAUX)
-    let globalHistory = [];
-    let globalHistoryIndex = -1;
+  function snapshot() { return JSON.stringify(serializeAll()); }
+  function pushHistory() {
+    if (restoring) return;
+    const s = snapshot();
+    if (history[historyIndex] === s) return;
+    history = history.slice(0, historyIndex + 1);
+    history.push(s);
+    if (history.length > 100) history.shift();
+    historyIndex = history.length - 1;
+    updateHistoryButtons();
+  }
+  function applySnapshot(s) {
+    const data = JSON.parse(s);
+    courses = normalizeCourses(data.courses);
+    strokes = normalizeStrokes(data.strokes);
+    catalog = normalizeCatalog(data.catalog);
+    locations = normalizeLocations(data.locations);
+    restoring = true;
+    renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions(); redraw();
+    restoring = false;
+    saveLocalAll(); scheduleCloudSave();
+  }
+  function undo() { if (historyIndex > 0) { historyIndex--; applySnapshot(history[historyIndex]); updateHistoryButtons(); } }
+  function redo() { if (historyIndex < history.length - 1) { historyIndex++; applySnapshot(history[historyIndex]); updateHistoryButtons(); } }
+  function updateHistoryButtons() {
+    $('btnUndo').disabled = historyIndex <= 0;
+    $('btnRedo').disabled = historyIndex >= history.length - 1;
+  }
 
-    function captureGlobalState() {
-      return {
-        timetable: getAllWeeksData(),
-        drawings: JSON.parse(JSON.stringify(weekDrawings)),
-        locations: getStoredLocations(),
-        courses: getStoredCourses()
-      };
-    }
+  function placementError(week, day, hour, duration, ignoreId) {
+    if (hour + duration > H) return "Ce cours dépasse la fin de la grille.";
+    const clash = (courses[week] || []).find((c) => c.id !== ignoreId && c.day === day && hour < c.hour + c.duration && c.hour < hour + duration);
+    if (clash) return "Ce créneau chevauche « " + clash.title + " » (" + DAYS[day] + ", " + CONFIG.hours[clash.hour] + ").";
+    return '';
+  }
+  function findItem(week, id) { return (courses[week] || []).find((c) => c.id === id) || null; }
+  function findItemAt(week, day, hour) { return (courses[week] || []).find((c) => c.day === day && c.hour === hour) || null; }
+  function removeItem(week, id) { courses[week] = (courses[week] || []).filter((c) => c.id !== id); }
+  function moveItem(fromWeek, id, toWeek, day, hour) {
+    const item = findItem(fromWeek, id); if (!item) return;
+    if (fromWeek === toWeek && item.day === day && item.hour === hour) return;
+    const err = placementError(toWeek, day, hour, item.duration, item.id);
+    if (err) { toast(err); return; }
+    removeItem(fromWeek, id); item.day = day; item.hour = hour; courses[toWeek].push(item);
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards();
+  }
 
-    function pushGlobalHistory() {
-      const state = captureGlobalState();
-      if (globalHistoryIndex < globalHistory.length - 1) {
-        globalHistory = globalHistory.slice(0, globalHistoryIndex + 1);
-      }
-      globalHistory.push(JSON.stringify(state));
-      globalHistoryIndex = globalHistory.length - 1;
-    }
+  const weeksWrapper = $('weeksWrapper'), weekSelect = $('selectWeek'), container = $('scrollContainer');
+  function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
+  function fmtYY(d) { return String(d.getFullYear()).slice(-2); }
+  function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
+  function getCurrentWeekKey() {
+    const diffDays = Math.floor((new Date() - CONFIG.startDateS1) / 86400000);
+    let n = Math.floor(diffDays/7) + 1; n = Math.min(Math.max(n,1), CONFIG.weeks);
+    return weekKey(n);
+  }
 
-    function initGlobalHistory() {
-      globalHistory = [JSON.stringify(captureGlobalState())];
-      globalHistoryIndex = 0;
-    }
+  function buildWeeks() {
+    for (let w = 1; w <= CONFIG.weeks; w++) {
+      const wk = weekKey(w), mon = mondayOf(w), sun = new Date(mon); sun.setDate(sun.getDate()+6);
 
-    function applyGlobalState(stateObj) {
-      localStorage.setItem('timetable_multi_weeks', JSON.stringify(stateObj.timetable || {}));
-      weekDrawings = stateObj.drawings || {};
-      localStorage.setItem('timetable_drawings_vector', JSON.stringify(weekDrawings));
-      localStorage.setItem('timetable_saved_locations', JSON.stringify(stateObj.locations || []));
-      localStorage.setItem('timetable_saved_courses', JSON.stringify(stateObj.courses || []));
-
-      loadAllWeeksDataSilent();
-      redrawVectorCanvas();
-      updateLocationsDatalist();
-      updateCoursesDatalist();
-      resizeCanvas();
-    }
-
-    function undoGlobal() {
-      if (globalHistoryIndex > 0) {
-        globalHistoryIndex--;
-        const stateObj = JSON.parse(globalHistory[globalHistoryIndex]);
-        applyGlobalState(stateObj);
-      }
-    }
-
-    function redoGlobal() {
-      if (globalHistoryIndex < globalHistory.length - 1) {
-        globalHistoryIndex++;
-        const stateObj = JSON.parse(globalHistory[globalHistoryIndex]);
-        applyGlobalState(stateObj);
-      }
-    }
-
-    function getStoredCourses() {
-      const saved = localStorage.getItem('timetable_saved_courses');
-      if (saved) return JSON.parse(saved);
-      return [
-        "ELECH3001 - Théorie",
-        "ELECH3001 - Exercices 1",
-        "ELECH3001 - Exercices 2",
-        "MATHH2000 - Théorie",
-        "MATHH2000 - Exercices",
-        "MATHH3001 - Théorie",
-        "MATHH3001 - Exercices 2",
-        "MECAH200 - Exercices 2"
-      ];
-    }
-
-    function updateCoursesDatalist() {
-      const list = document.getElementById('coursesDatalist');
-      list.innerHTML = '';
-      getStoredCourses().forEach(c => {
-        let opt = document.createElement('option');
-        opt.value = c;
-        list.appendChild(opt);
-      });
-    }
-
-    function getStoredLocations() {
-      const saved = localStorage.getItem('timetable_saved_locations');
-      if (saved) return JSON.parse(saved);
-      return ["Bibliothèque", "Maison", "Casa", "Auditoire FERRER", "Auditoire GUILLISSEN", "Auditoire Aretha FRANKLIN"];
-    }
-
-    function saveLocation(loc) {
-      if (!loc || loc.trim() === '') return;
-      let locations = getStoredLocations();
-      loc = loc.trim();
-      if (!locations.includes(loc)) {
-        locations.push(loc);
-        localStorage.setItem('timetable_saved_locations', JSON.stringify(locations));
-        updateLocationsDatalist();
-      }
-    }
-
-    function updateLocationsDatalist() {
-      const locationsList = document.getElementById('locationsList');
-      locationsList.innerHTML = '';
-      getStoredLocations().forEach(loc => {
-        let opt = document.createElement('option');
-        opt.value = loc;
-        locationsList.appendChild(opt);
-      });
-    }
-
-    function openConfigModal(type) {
-      currentConfigType = type;
-      const titleEl = document.getElementById('configModalTitle');
-      const descEl = document.getElementById('configModalDesc');
-      const textarea = document.getElementById('configTextarea');
-
-      if (type === 'courses') {
-        titleEl.textContent = "Liste globale des Cours";
-        descEl.textContent = "Modifiez ou ajoutez vos cours (un par ligne) :";
-        textarea.value = getStoredCourses().join('\n');
-      } else {
-        titleEl.textContent = "Liste globale des Locaux";
-        descEl.textContent = "Modifiez ou ajoutez vos locaux (un par ligne) :";
-        textarea.value = getStoredLocations().join('\n');
-      }
-      document.getElementById('configModal').style.display = 'flex';
-    }
-
-    function closeConfigModal() {
-      document.getElementById('configModal').style.display = 'none';
-    }
-
-    function saveConfigModal() {
-      const text = document.getElementById('configTextarea').value;
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
-
-      if (currentConfigType === 'courses') {
-        localStorage.setItem('timetable_saved_courses', JSON.stringify(lines));
-        updateCoursesDatalist();
-        alert("Liste des cours mise à jour !");
-      } else if (currentConfigType === 'locations') {
-        localStorage.setItem('timetable_saved_locations', JSON.stringify(lines));
-        updateLocationsDatalist();
-        alert("Liste des locaux mise à jour !");
-      }
-      pushGlobalHistory();
-      closeConfigModal();
-    }
-
-    const weekSelect = document.getElementById('selectWeek');
-    const weeksWrapper = document.getElementById('weeksWrapper');
-
-    function formatDateShort(date) {
-      const d = String(date.getDate()).padStart(2, '0');
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      return `${d}/${m}`;
-    }
-
-    function getMondayOfWeek(weekNum) {
-      const monday = new Date(startDateS1);
-      monday.setDate(startDateS1.getDate() + (weekNum - 1) * 7);
-      return monday;
-    }
-
-    function getCurrentWeekKey() {
-      const today = new Date();
-      const diffTime = today - startDateS1;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      let weekNum = Math.floor(diffDays / 7) + 1;
-      if (weekNum < 1) weekNum = 1;
-      if (weekNum > 14) weekNum = 14;
-      return `S${weekNum}`;
-    }
-
-    for (let w = 1; w <= 14; w++) {
-      const weekKey = `S${w}`;
-      const mon = getMondayOfWeek(w);
-      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-
-      let opt = document.createElement('option');
-      opt.value = weekKey;
-      opt.textContent = `Semaine ${w} (${formatDateShort(mon)} - ${formatDateShort(sun)})`;
+      const opt = document.createElement('option'); opt.value = wk;
+      opt.textContent = 'Semaine ' + w + ' (' + fmtShort(mon) + ' - ' + fmtShort(sun) + ')';
       weekSelect.appendChild(opt);
 
-      const weekBlock = document.createElement('div');
-      weekBlock.id = `week-block-${weekKey}`;
-      weekBlock.className = 'week-block';
+      const block = document.createElement('div'); block.className = 'week-block'; block.id = 'week-block-' + wk;
+      blocks[w] = block;
+      if (w > 1) block.appendChild(Object.assign(document.createElement('div'), { className:'week-divider' }));
 
-      if (w > 1) {
-        const divider = document.createElement('div');
-        divider.className = 'week-divider';
-        weekBlock.appendChild(divider);
-      }
-
-      const headerRow = document.createElement('div');
-      headerRow.className = 'header-row';
-
-      const daysNames = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-      const cornerCell = document.createElement('div');
-      cornerCell.className = 'header-cell';
-      cornerCell.textContent = weekKey;
-      headerRow.appendChild(cornerCell);
-
+      const headerRow = document.createElement('div'); headerRow.className = 'header-row';
+      headerRows[w] = headerRow;
+      const corner = document.createElement('div'); corner.className = 'header-cell'; corner.textContent = wk; headerRow.appendChild(corner);
       for (let d = 0; d < 7; d++) {
-        const currentDayDate = new Date(mon);
-        currentDayDate.setDate(mon.getDate() + d);
-
-        const dayCell = document.createElement('div');
-        dayCell.className = 'header-cell';
-
-        const dd = String(currentDayDate.getDate()).padStart(2, '0');
-        const mm = String(currentDayDate.getMonth() + 1).padStart(2, '0');
-        const yy = String(currentDayDate.getFullYear()).slice(-2);
-
-        dayCell.textContent = `${daysNames[d]} ${dd}/${mm}/${yy}`;
-        headerRow.appendChild(dayCell);
+        const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
+        const cell = document.createElement('div'); cell.className = 'header-cell';
+        cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate) + '/' + fmtYY(dayDate);
+        headerRow.appendChild(cell);
       }
+      block.appendChild(headerRow);
 
-      weekBlock.appendChild(headerRow);
-
-      const grid = document.createElement('div');
-      grid.className = 'timetable-body';
-
-      hours.forEach((h, hIndex) => {
-        const timeCell = document.createElement('div');
-        timeCell.className = 'time-cell';
-        timeCell.textContent = h;
+      const grid = document.createElement('div'); grid.className = 'timetable-body';
+      CONFIG.hours.forEach((label, h) => {
+        const timeCell = document.createElement('div'); timeCell.className = 'time-cell'; timeCell.textContent = label;
         grid.appendChild(timeCell);
-
         for (let day = 0; day < 7; day++) {
-          const slot = document.createElement('div');
-          slot.className = 'slot';
-          slot.dataset.week = weekKey;
-          slot.dataset.day = day;
-          slot.dataset.hour = hIndex;
+          const slot = document.createElement('div'); slot.className = 'slot';
+          slotMap[wk + '-' + day + '-' + h] = slot;
 
-          slot.onmouseenter = () => { hoveredSlot = slot; };
-          slot.onmouseleave = () => { if (hoveredSlot === slot) hoveredSlot = null; };
-
-          slot.onclick = (e) => { 
-            if(!isDrawingActive && !e.target.classList.contains('course-card')) {
-              openModal(slot); 
-            }
-          };
-
-          slot.ondragover = (e) => {
-            e.preventDefault();
-            slot.classList.add('drag-over');
-          };
-
-          slot.ondragleave = () => {
-            slot.classList.remove('drag-over');
-          };
-
-          slot.ondrop = (e) => {
-            e.preventDefault();
-            slot.classList.remove('drag-over');
-            if (draggedCardData) {
-              if (checkOverlap(slot, draggedCardData.duration, draggedCardData.sourceSlot)) {
-                draggedCardData = null;
-                return;
-              }
-              if (draggedCardData.sourceSlot) {
-                draggedCardData.sourceSlot.textContent = '';
-              }
-              slot.textContent = '';
-              addCardToSlot(
-                slot, 
-                draggedCardData.title, 
-                draggedCardData.subtitle,
-                draggedCardData.type, 
-                draggedCardData.loc, 
-                draggedCardData.duration
-              );
-              saveAllWeeksData();
-              pushGlobalHistory();
-              resizeCanvas();
-              draggedCardData = null;
-            }
-          };
-
+          slot.addEventListener('mouseenter', () => { hovered = { week: wk, day, hour: h }; });
+          slot.addEventListener('mouseleave', () => { if (hovered && hovered.week===wk && hovered.day===day && hovered.hour===h) hovered = null; });
+          slot.addEventListener('click', (e) => {
+            if (viewOnly || drawMode !== 'none') return;
+            if (e.target.closest('.course-card')) return;
+            openModal(wk, day, h);
+          });
+          slot.addEventListener('dragover', (e) => { if (!dragged || viewOnly) return; e.preventDefault(); slot.classList.add('drag-over'); });
+          slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+          slot.addEventListener('drop', (e) => {
+            e.preventDefault(); slot.classList.remove('drag-over');
+            if (!dragged || viewOnly) return;
+            const d = dragged; dragged = null; moveItem(d.week, d.id, wk, day, h);
+          });
           grid.appendChild(slot);
         }
       });
-
-      weekBlock.appendChild(grid);
-      weeksWrapper.appendChild(weekBlock);
+      block.appendChild(grid);
+      weeksWrapper.appendChild(block);
     }
+  }
 
-    function checkOverlap(targetSlot, duration, sourceSlot = null) {
-      const wKey = targetSlot.dataset.week;
-      const day = targetSlot.dataset.day;
-      const startHour = parseInt(targetSlot.dataset.hour);
+  function cardMatchesFilter(item) {
+    if (filter.types.size && !filter.types.has(item.type)) return false;
+    if (filter.names.size && !filter.names.has(item.title)) return false;
+    return true;
+  }
 
-      for (let h = startHour; h < startHour + duration; h++) {
-        if (h >= hours.length) return true;
-        const checkSlot = document.querySelector(`.slot[data-week="${wKey}"][data-day="${day}"][data-hour="${h}"]`);
-        if (checkSlot && checkSlot !== sourceSlot && checkSlot.querySelector('.course-card')) {
-          return true;
-        }
-      }
-      return false;
-    }
+  function buildCard(week, item) {
+    const card = document.createElement('div');
+    card.className = 'course-card ' + item.type + (cardMatchesFilter(item) ? '' : ' dimmed');
+    card.style.height = 'calc(var(--row-height) * ' + item.duration + ' - 2px)';
+    card.draggable = !viewOnly;
 
-    window.addEventListener('keydown', (e) => {
-      const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA')) {
-        return; 
-      }
+    const title = document.createElement('div'); title.className = 'header-title'; title.textContent = item.title; card.appendChild(title);
+    if (item.subtitle) { const s = document.createElement('div'); s.className = 'subtitle'; s.textContent = item.subtitle; card.appendChild(s); }
+    if (item.loc) { const l = document.createElement('div'); l.className = 'location'; l.textContent = item.loc; card.appendChild(l); }
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-        if (hoveredSlot) {
-          const card = hoveredSlot.querySelector('.course-card');
-          if (card) {
-            copiedCourseBuffer = {
-              title: card.dataset.title,
-              subtitle: card.dataset.subtitle || '',
-              type: card.dataset.type,
-              loc: card.dataset.loc,
-              duration: parseInt(card.dataset.duration)
-            };
-          }
-        }
-      }
+    card.addEventListener('click', (e) => { e.stopPropagation(); if (!viewOnly && drawMode === 'none') openModal(week, item.day, item.hour); });
+    card.addEventListener('dragstart', (e) => {
+      if (viewOnly) { e.preventDefault(); return; }
+      dragged = { week, id: item.id }; e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', item.id); } catch (_) {}
+    });
+    card.addEventListener('dragend', () => { dragged = null; document.querySelectorAll('.slot.drag-over').forEach((s) => s.classList.remove('drag-over')); });
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
-        if (hoveredSlot && copiedCourseBuffer) {
-          if (checkOverlap(hoveredSlot, copiedCourseBuffer.duration)) return;
-          hoveredSlot.textContent = '';
-          addCardToSlot(
-            hoveredSlot,
-            copiedCourseBuffer.title,
-            copiedCourseBuffer.subtitle,
-            copiedCourseBuffer.type,
-            copiedCourseBuffer.loc,
-            copiedCourseBuffer.duration
-          );
-          saveAllWeeksData();
-          pushGlobalHistory();
-          resizeCanvas();
-        }
-      }
+    return card;
+  }
+
+  function renderCards() {
+    document.querySelectorAll('.course-card').forEach((c) => c.remove());
+    Object.keys(courses).forEach((wk) => courses[wk].forEach((item) => {
+      const slot = slotMap[wk + '-' + item.day + '-' + item.hour];
+      if (slot) slot.appendChild(buildCard(wk, item));
+    }));
+  }
+
+  const TYPE_LABELS = { theorie:'Théorie', exercices:'Exercices / TP', labo:'Laboratoire', etude:'Étude / Perso' };
+
+  function refreshFilterOptions() {
+    const typesBox = $('filterTypes'); typesBox.innerHTML = '';
+    TYPES.forEach((t) => {
+      const id = 'ft_' + t;
+      const row = document.createElement('label'); row.className = 'filter-opt'; row.htmlFor = id;
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = id; cb.checked = filter.types.has(t);
+      cb.addEventListener('change', () => { cb.checked ? filter.types.add(t) : filter.types.delete(t); renderCards(); });
+      row.appendChild(cb); row.appendChild(document.createTextNode(TYPE_LABELS[t]));
+      typesBox.appendChild(row);
     });
 
-    const canvas = document.getElementById('drawingCanvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('scrollContainer');
+    const namesSet = new Set();
+    Object.keys(courses).forEach((wk) => courses[wk].forEach((it) => namesSet.add(it.title)));
+    const namesBox = $('filterNames'); namesBox.innerHTML = '';
+    if (!namesSet.size) { namesBox.innerHTML = '<p class="modal-hint">Aucun cours planifié pour l’instant.</p>'; }
+    Array.from(namesSet).sort().forEach((name, i) => {
+      const id = 'fn_' + i;
+      const row = document.createElement('label'); row.className = 'filter-opt'; row.htmlFor = id;
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = id; cb.checked = filter.names.has(name);
+      cb.addEventListener('change', () => { cb.checked ? filter.names.add(name) : filter.names.delete(name); renderCards(); });
+      row.appendChild(cb); row.appendChild(document.createTextNode(name));
+      namesBox.appendChild(row);
+    });
+  }
 
-    let isDrawing = false;
-    let startX = 0, startY = 0;
+  $('btnFilter').addEventListener('click', () => { refreshFilterOptions(); $('filterPanel').classList.toggle('open'); });
+  $('btnFilterClose').addEventListener('click', () => $('filterPanel').classList.remove('open'));
+  $('btnFilterReset').addEventListener('click', () => { filter.types.clear(); filter.names.clear(); refreshFilterOptions(); renderCards(); });
 
-    function resizeCanvas() {
-      canvas.width = container.scrollWidth;
-      canvas.height = container.scrollHeight;
-      redrawVectorCanvas();
-    }
-
-    window.addEventListener('resize', resizeCanvas);
-
-    function toggleDrawingMode() {
-      isDrawingActive = !isDrawingActive;
-      const btnPencil = document.getElementById('btnPencil');
-      const toolbar = document.getElementById('drawingToolbar');
-
-      if (isDrawingActive) {
-        resizeCanvas();
-        btnPencil.classList.add('btn-active');
-        toolbar.classList.add('active');
-        canvas.classList.add('active');
-      } else {
-        btnPencil.classList.remove('btn-active');
-        toolbar.classList.remove('active');
-        canvas.classList.remove('active');
+  function fillRangeSelects() {
+    [$('rangeFrom'), $('rangeTo')].forEach((sel) => {
+      for (let w = 1; w <= CONFIG.weeks; w++) {
+        const o = document.createElement('option'); o.value = String(w); o.textContent = 'S' + w; sel.appendChild(o);
       }
+    });
+    $('rangeFrom').value = String(range.from);
+    $('rangeTo').value = String(range.to);
+  }
+  function applyRange() {
+    for (let w = 1; w <= CONFIG.weeks; w++) {
+      if(blocks[w]) blocks[w].classList.toggle('hidden-range', w < range.from || w > range.to);
+    }
+    writeJSON(LS.range, range);
+    positionNowLine();
+    resizeCanvas();
+  }
+  $('rangeFrom').addEventListener('change', () => {
+    let from = parseInt($('rangeFrom').value, 10);
+    if (from > range.to) { range.to = from; $('rangeTo').value = String(from); }
+    range.from = from; applyRange();
+  });
+  $('rangeTo').addEventListener('change', () => {
+    let to = parseInt($('rangeTo').value, 10);
+    if (to < range.from) { range.from = to; $('rangeFrom').value = String(to); }
+    range.to = to; applyRange();
+  });
+  $('btnRangeAll').addEventListener('click', () => {
+    range = { from: 1, to: CONFIG.weeks };
+    $('rangeFrom').value = '1'; $('rangeTo').value = String(CONFIG.weeks);
+    applyRange();
+  });
+
+  function isModalOpen() { return $('courseModal').style.display === 'flex'; }
+
+  function fillCoursesDatalist() {
+    const list = $('coursesDatalist'); list.innerHTML = '';
+    catalog.forEach((c) => { const o = document.createElement('option'); o.value = c.name; list.appendChild(o); });
+  }
+  function updateCoursesDatalist() { fillCoursesDatalist(); }
+  function updateLocationsDatalist() {
+    const list = $('locationsList'); list.innerHTML = '';
+    locations.forEach((loc) => { const o = document.createElement('option'); o.value = loc; list.appendChild(o); });
+  }
+
+  $('courseSearch').addEventListener('input', (e) => {
+    const val = e.target.value;
+    const exact = catalog.find((c) => c.name === val);
+    if (exact) { $('courseType').value = exact.type; $('courseSubTitle').value = exact.subtitle; return; }
+    const code = val.split(' - ')[0].trim();
+    if (code && !$('courseSubTitle').value) {
+      const byCode = catalog.find((c) => c.name.split(' - ')[0].trim() === code);
+      if (byCode) $('courseSubTitle').value = byCode.subtitle;
+    }
+  });
+
+  function openModal(week, day, hour) {
+    if (viewOnly) return;
+    const item = findItemAt(week, day, hour);
+    modalCtx = { editing: item, week, day, hour };
+    $('modalError').textContent = '';
+    if (item) {
+      $('courseSearch').value = item.title; $('courseSubTitle').value = item.subtitle;
+      $('courseType').value = item.type; $('courseLocation').value = item.loc; $('courseDuration').value = String(item.duration);
+      $('btnModalCopy').style.display = 'inline-block'; $('btnModalPaste').style.display = 'none'; $('btnDeleteCourse').style.display = 'inline-block';
+    } else {
+      $('courseSearch').value = ''; $('courseSubTitle').value = ''; $('courseType').value = 'theorie';
+      $('courseLocation').value = ''; $('courseDuration').value = String(Math.min(2, H - hour));
+      $('btnModalCopy').style.display = 'none'; $('btnModalPaste').style.display = copiedBuffer ? 'inline-block' : 'none';
+      $('btnDeleteCourse').style.display = 'none';
+    }
+    updateLocationsDatalist(); fillCoursesDatalist();
+    $('courseModal').style.display = 'flex'; $('courseSearch').focus();
+  }
+  function closeModal() { $('courseModal').style.display = 'none'; }
+
+  function saveCourse() {
+    const title = $('courseSearch').value.trim();
+    if (!title) { $('modalError').textContent = "Indiquez un nom de cours (ou utilisez « Supprimer »)."; return; }
+    const week = modalCtx.week, day = modalCtx.day, hour = modalCtx.hour, editing = modalCtx.editing;
+    const type = $('courseType').value, subtitle = $('courseSubTitle').value.trim();
+    const loc = $('courseLocation').value.trim(), duration = parseInt($('courseDuration').value, 10);
+
+    const err = placementError(week, day, hour, duration, editing ? editing.id : null);
+    if (err) { $('modalError').textContent = err; return; }
+
+    if (editing) {
+      removeItem(week, editing.id);
+      editing.title = title; editing.subtitle = subtitle; editing.type = type; editing.loc = loc; editing.duration = duration;
+      courses[week].push(editing);
+    } else {
+      courses[week].push({ id: uid(), day, hour, duration, title, subtitle, type, loc });
+    }
+    saveLocation(loc);
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); closeModal();
+  }
+  function deleteCourse() {
+    const week = modalCtx.week, editing = modalCtx.editing;
+    if (editing) { removeItem(week, editing.id); saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); }
+    closeModal();
+  }
+  let copiedBuffer = null;
+  function copyCurrentCourseModal() {
+    const it = modalCtx.editing;
+    if (it) { copiedBuffer = { title: it.title, subtitle: it.subtitle, type: it.type, loc: it.loc, duration: it.duration }; toast('Cours copié.'); }
+    closeModal();
+  }
+  function pasteCourseModal() {
+    if (!copiedBuffer) return;
+    const week = modalCtx.week, day = modalCtx.day, hour = modalCtx.hour;
+    const err = placementError(week, day, hour, copiedBuffer.duration, null);
+    if (err) { $('modalError').textContent = err; return; }
+    courses[week].push({ id: uid(), day, hour, duration: copiedBuffer.duration, title: copiedBuffer.title, subtitle: copiedBuffer.subtitle, type: copiedBuffer.type, loc: copiedBuffer.loc });
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); closeModal();
+  }
+  function saveLocation(loc) {
+    if (!loc) return;
+    if (!locations.includes(loc)) { locations.push(loc); saveLocalAll(); scheduleCloudSave(); }
+  }
+
+  $('btnSaveCourse').addEventListener('click', saveCourse);
+  $('btnDeleteCourse').addEventListener('click', deleteCourse);
+  $('btnModalCopy').addEventListener('click', copyCurrentCourseModal);
+  $('btnModalPaste').addEventListener('click', pasteCourseModal);
+  $('btnCancelCourse').addEventListener('click', closeModal);
+  $('courseModal').addEventListener('click', (e) => { if (e.target === $('courseModal')) closeModal(); });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { if (isModalOpen()) closeModal(); $('filterPanel').classList.remove('open'); return; }
+
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      if (isModalOpen()) return;
+      const t = e.target; if (t && t.closest && t.closest('input,textarea,select')) return;
+      e.preventDefault(); undo(); return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+      if (isModalOpen()) return;
+      const t = e.target; if (t && t.closest && t.closest('input,textarea,select')) return;
+      e.preventDefault(); redo(); return;
     }
 
-    function setDrawingTool(tool) {
-      currentTool = tool;
-      document.getElementById('toolPen').classList.toggle('selected', tool === 'pen');
-      document.getElementById('toolHighlighter').classList.toggle('selected', tool === 'highlighter');
-      document.getElementById('toolEraser').classList.toggle('selected', tool === 'eraser');
-    }
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (isModalOpen() || drawMode !== 'none' || viewOnly) return;
+    const t = e.target; if (t && t.closest && t.closest('input,textarea,select,[contenteditable="true"]')) return;
+    if (!hovered) return;
 
-    function getCanvasCoords(e) {
-      const rect = container.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      
-      return {
-        x: clientX - rect.left + container.scrollLeft,
-        y: clientY - rect.top + container.scrollTop
-      };
-    }
-
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('touchstart', startDrawing, {passive: false});
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchmove', draw, {passive: false});
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('touchend', stopDrawing);
-
-    function startDrawing(e) {
-      if (!isDrawingActive) return;
+    const key = e.key.toLowerCase();
+    if (key === 'c') {
+      if (String(window.getSelection && window.getSelection()).length > 0) return;
+      const it = findItemAt(hovered.week, hovered.day, hovered.hour);
+      if (it) { copiedBuffer = { title: it.title, subtitle: it.subtitle, type: it.type, loc: it.loc, duration: it.duration }; toast('Cours copié.'); }
+    } else if (key === 'v' && copiedBuffer) {
       e.preventDefault();
-      isDrawing = true;
-      const coords = getCanvasCoords(e);
-      startX = coords.x;
-      startY = coords.y;
+      const err = placementError(hovered.week, hovered.day, hovered.hour, copiedBuffer.duration, null);
+      if (err) { toast(err); return; }
+      courses[hovered.week].push({ id: uid(), day: hovered.day, hour: hovered.hour, duration: copiedBuffer.duration, title: copiedBuffer.title, subtitle: copiedBuffer.subtitle, type: copiedBuffer.type, loc: copiedBuffer.loc });
+      saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
+    }
+  });
 
-      if (!weekDrawings[currentVisibleWeek]) {
-        weekDrawings[currentVisibleWeek] = [];
+  $('btnUndo').addEventListener('click', undo);
+  $('btnRedo').addEventListener('click', redo);
+
+  const canvas = $('drawingCanvas'), ctx = canvas.getContext('2d');
+  let cssW = 0, cssH = 0, drawMode = 'none', current = null, currentTop = 0, erasedSomething = false;
+  const round4 = (n) => Math.round(n*10000)/10000, round1 = (n) => Math.round(n*10)/10;
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    cssW = container.clientWidth; cssH = weeksWrapper.offsetHeight;
+    canvas.width = Math.round(cssW*dpr); canvas.height = Math.round(cssH*dpr);
+    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    redraw();
+  }
+  function weekVisible(n) { return n >= range.from && n <= range.to; }
+  function contentPts(s) {
+    const n = weekNum(s.w); const top = blocks[n].offsetTop;
+    return s.pts.map((p) => [p[0]*cssW, p[1] + top]);
+  }
+  function drawStroke(s) {
+    const n = weekNum(s.w); if (!weekVisible(n)) return;
+    const pts = contentPts(s);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = s.color || '#dc3545';
+    ctx.globalAlpha = s.kind === 'highlight' ? 0.4 : 1;
+    ctx.lineWidth = s.kind === 'highlight' ? 14 : 2.5;
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  function redraw() { ctx.clearRect(0,0,cssW,cssH); strokes.forEach(drawStroke); if (current && !current.eraser) drawStroke(current); }
+
+  function setMode(mode) {
+    if (viewOnly) return;
+    const buttons = { pen: $('toolPen'), highlight: $('toolHighlighter'), eraser: $('toolEraser') };
+    drawMode = drawMode === mode ? 'none' : mode;
+    Object.keys(buttons).forEach((m) => buttons[m].classList.toggle('selected', drawMode === m));
+    const active = drawMode !== 'none';
+    $('btnPencil').classList.toggle('btn-active', active);
+    $('drawingToolbar').classList.toggle('active', active);
+    canvas.classList.toggle('active', active);
+  }
+  $('btnPencil').addEventListener('click', () => setMode(drawMode === 'none' ? 'pen' : 'none'));
+  $('toolPen').addEventListener('click', () => setMode('pen'));
+  $('toolHighlighter').addEventListener('click', () => setMode('highlight'));
+  $('toolEraser').addEventListener('click', () => setMode('eraser'));
+  $('btnClearCanvas').addEventListener('click', () => {
+    const n = weekNum(currentVisibleWeek);
+    const before = strokes.length;
+    strokes = strokes.filter((s) => weekNum(s.w) !== n);
+    if (strokes.length !== before) { saveLocalAll(); scheduleCloudSave(); pushHistory(); redraw(); }
+  });
+
+  function pointerPos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function weekAtY(y) {
+    for (let w = range.from; w <= range.to; w++) {
+      const b = blocks[w];
+      if (b && y >= b.offsetTop && y < b.offsetTop + b.offsetHeight) return { key: weekKey(w), top: b.offsetTop };
+    }
+    return null;
+  }
+  function distToSeg(px,py,ax,ay,bx,by) {
+    const dx=bx-ax, dy=by-ay, len2=dx*dx+dy*dy;
+    let t = len2===0?0:((px-ax)*dx+(py-ay)*dy)/len2; t = Math.max(0,Math.min(1,t));
+    return Math.hypot(px-(ax+t*dx), py-(ay+t*dy));
+  }
+  function hitStroke(s,x,y) { const pts = contentPts(s); for (let i=0;i<pts.length-1;i++) if (distToSeg(x,y,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1])<=14) return true; return false; }
+  function eraseAt(p) { const before = strokes.length; strokes = strokes.filter((s) => !hitStroke(s,p.x,p.y)); if (strokes.length!==before) { erasedSomething = true; redraw(); } }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (drawMode === 'none' || viewOnly) return;
+    e.preventDefault();
+    try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
+    const p = pointerPos(e);
+    if (drawMode === 'eraser') { erasedSomething = false; current = { eraser:true }; eraseAt(p); return; }
+    const wk = weekAtY(p.y); if (!wk) return;
+    currentTop = wk.top;
+    const pt = [round4(p.x/cssW), round1(p.y - wk.top)];
+    current = { w: wk.key, kind: drawMode, color: $('toolColor').value, pts: [pt] };
+    redraw();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!current) return;
+    const p = pointerPos(e);
+    if (current.eraser) { eraseAt(p); return; }
+    const pt = [round4(p.x/cssW), round1(p.y - currentTop)];
+    const last = current.pts[current.pts.length-1];
+    if (Math.hypot((pt[0]-last[0])*cssW, pt[1]-last[1]) < 1.5) return;
+    current.pts.push(pt); redraw();
+  });
+  function stopDrawing() {
+    if (!current) return;
+    const s = current; current = null;
+    if (s.eraser) { if (erasedSomething) { saveLocalAll(); scheduleCloudSave(); pushHistory(); } return; }
+    if (s.pts.length < 2) { redraw(); return; }
+    strokes.push(s); saveLocalAll(); scheduleCloudSave(); pushHistory(); redraw();
+  }
+  canvas.addEventListener('pointerup', stopDrawing);
+  canvas.addEventListener('pointercancel', stopDrawing);
+
+  let nowLineEl = null;
+  function positionNowLine() {
+    if (nowLineEl) { nowLineEl.remove(); nowLineEl = null; }
+    const wk = getCurrentWeekKey(); const n = weekNum(wk);
+    if (!weekVisible(n)) return;
+    const now = new Date();
+    const startMinutes = 8*60, endMinutes = 20*60, curMinutes = now.getHours()*60+now.getMinutes();
+    if (curMinutes < startMinutes || curMinutes >= endMinutes) return;
+    const hourFloor = Math.floor((curMinutes - startMinutes)/60);
+    const frac = ((curMinutes - startMinutes) % 60) / 60;
+    const day = (now.getDay() + 6) % 7;
+    const slot = slotMap[wk + '-' + day + '-' + hourFloor];
+    if (!slot) return;
+    const line = document.createElement('div');
+    line.className = 'now-line';
+    line.style.top = (slot.offsetTop + frac*slot.offsetHeight) + 'px';
+    line.style.left = slot.offsetLeft + 'px';
+    line.style.width = slot.offsetWidth + 'px';
+    container.appendChild(line);
+    nowLineEl = line;
+  }
+  setInterval(positionNowLine, 60000);
+
+  function copyPreviousWeek() {
+    const n = weekNum(currentVisibleWeek); if (n <= 1) { toast('Pas de semaine précédente avant la S1 !'); return; }
+    const prev = weekKey(n-1);
+    if (confirm('Copier la ' + prev + ' dans la ' + currentVisibleWeek + ' ? (le contenu actuel sera remplacé)')) {
+      courses[currentVisibleWeek] = courses[prev].map((c) => Object.assign({}, c, { id: uid() }));
+      saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
+    }
+  }
+  function clearCurrentWeek() {
+    if (confirm("Effacer l'emploi du temps de la semaine " + currentVisibleWeek + ' ?')) {
+      courses[currentVisibleWeek] = [];
+      saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
+    }
+  }
+  $('btnCopyPrev').addEventListener('click', copyPreviousWeek);
+  $('btnClearWeek').addEventListener('click', clearCurrentWeek);
+
+  function scrollToSelectedWeek() { 
+    const targetW = weekNum(weekSelect.value);
+    const t = blocks[targetW]; 
+    if (t) t.scrollIntoView({ behavior:'smooth' }); 
+  }
+  weekSelect.addEventListener('change', scrollToSelectedWeek);
+  
+  function onScroll() {
+    const probe = container.getBoundingClientRect().top + 150;
+    for (let w = range.from; w <= range.to; w++) {
+      const r = blocks[w].getBoundingClientRect();
+      if (r.top <= probe && r.bottom >= probe) { currentVisibleWeek = weekKey(w); weekSelect.value = currentVisibleWeek; break; }
+    }
+  } 
+  container.addEventListener('scroll', onScroll, { passive:true });
+
+  let currentConfigType = null;
+  function openConfigModal(type) {
+    if (viewOnly) return;
+    currentConfigType = type;
+    $('configError').textContent = '';
+    if (type === 'courses') {
+      $('configModalTitle').textContent = "Catalogue de cours";
+      $('configModalDesc').textContent = "Un cours par ligne, au format : Nom | type | Intitulé complet. Type = theorie, exercices, labo ou etude.";
+      $('configTextarea').value = catalog.map((c) => c.name + ' | ' + c.type + ' | ' + c.subtitle).join('\n');
+    } else {
+      $('configModalTitle').textContent = "Liste des locaux";
+      $('configModalDesc').textContent = "Un local par ligne.";
+      $('configTextarea').value = locations.join('\n');
+    }
+    $('configModal').style.display = 'flex';
+  } 
+  function closeConfigModal() { $('configModal').style.display = 'none'; }
+  function saveConfigModal() {
+    const lines = $('configTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
+    if (currentConfigType === 'courses') {
+      const parsed = lines.map((line) => {
+        const parts = line.split('|').map((p) => p.trim());
+        return { name: parts[0] || '', type: parts[1] || 'theorie', subtitle: parts[2] || '' };  
+      }).filter((c) => c.name);
+      catalog = normalizeCatalog(parsed);
+      updateCoursesDatalist(); toast("Catalogue de cours mis à jour.");
+    } else {
+      locations = normalizeLocations(lines);
+      updateLocationsDatalist(); toast("Liste des locaux mise à jour.");
+    }
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); closeConfigModal();
+  }
+  $('btnConfigCourses').addEventListener('click', () => openConfigModal('courses'));
+  $('btnConfigLocations').addEventListener('click', () => openConfigModal('locations'));
+  $('btnSaveConfig').addEventListener('click', saveConfigModal);
+  $('btnCloseConfig').addEventListener('click', closeConfigModal);
+  $('configModal').addEventListener('click', (e) => { if (e.target === $('configModal')) closeConfigModal(); }); 
+
+  function exportData() {
+    const data = Object.assign({ app:'emploi-du-temps', version:3, exported:new Date().toISOString() }, serializeAll());
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'emploi-du-temps-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Sauvegarde exportée.');
+  }
+
+  function importData(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onerror = () => toast('Lecture du fichier impossible.');
+    reader.onload = () => {
+      let data; try { data = JSON.parse(String(reader.result)); } catch(_) { toast("Ce fichier n'est pas un JSON valide."); return; }
+      if (!data || typeof data !== 'object' || typeof data.courses !== 'object') { toast("Ce fichier ne ressemble pas à une sauvegarde."); return; }
+      if (!confirm('Remplacer toutes les données actuelles par celles du fichier ?')) return;
+      courses = normalizeCourses(data.courses);
+      strokes = normalizeStrokes(data.strokes);
+      catalog = normalizeCatalog(data.catalog);
+      locations = normalizeLocations(data.locations);
+      saveLocalAll(); scheduleCloudSave(); pushHistory();
+      renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions(); redraw();
+      toast('Données importées.');
+    };
+    reader.readAsText(file);
+  }
+  $('btnExport').addEventListener('click', exportData);
+  $('btnImport').addEventListener('click', () => $('importFile').click());
+  $('importFile').addEventListener('change', (e) => { importData(e.target.files[0]); e.target.value = ''; });
+
+  let cloudUser = null;
+  let saveTimer = null;
+  const SAVE_DELAY = 1500;
+
+  function setSaveStatus(kind, text) {
+    $('saveDot').className = 'save-dot' + (kind ? ' ' + kind : '');
+    $('saveText').textContent = text;
+  }
+
+  function doCloudSaveNow() {
+    if (!cloudUser || viewOnly) return;
+    clearTimeout(saveTimer); saveTimer = null;
+    setSaveStatus('saving', 'Enregistrement...');
+    const fs = window.__fs;
+    fs.setDoc(fs.doc(fs.db, 'users', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll()))
+      .then(() => {
+        setSaveStatus('saved', 'Enregistré');
+        if (shareEnabled) mirrorToShared();
+      })
+      .catch(() => setSaveStatus('error', 'Échec de sauvegarde'));
+  }
+  function scheduleCloudSave() {
+    if (!cloudUser || viewOnly) return;
+    setSaveStatus('saving', 'Modifications en attente...');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doCloudSaveNow, SAVE_DELAY);
+  }
+  function flushCloudSave() { if (saveTimer) doCloudSaveNow(); }
+
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushCloudSave(); });
+  window.addEventListener('pagehide', flushCloudSave);
+
+  function loadFromCloud() {
+    if (!cloudUser) return;
+    const fs = window.__fs;
+    fs.getDoc(fs.doc(fs.db, 'users', cloudUser.uid)).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        courses = normalizeCourses(data.courses);
+        strokes = normalizeStrokes(data.strokes);
+        catalog = normalizeCatalog(data.catalog);
+        locations = normalizeLocations(data.locations);
       }
+      saveLocalAll();
+      renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions(); redraw(); positionNowLine();
+      history = [snapshot()]; historyIndex = 0; updateHistoryButtons();
+      setSaveStatus('saved', 'Synchronisé');
+    }).catch(() => setSaveStatus('error', 'Connexion au cloud impossible'));
+  }
 
-      const color = document.getElementById('toolColor').value;
+  window.addEventListener('app:signed-in', (e) => {
+    cloudUser = e.detail; window.__offlineChoice = false;
+    viewOnly = false; applyViewOnlyUI();
+    loadFromCloud();
+  });
+  window.addEventListener('app:signed-out', () => {
+    cloudUser = null; setSaveStatus('offline', 'Non connecté');
+  });
+  window.addEventListener('app:before-logout', () => { flushCloudSave(); });
+  window.addEventListener('app:offline-mode', () => {
+    window.__offlineChoice = true; cloudUser = null; setSaveStatus('offline', 'Hors ligne (non sauvegardé en ligne)');
+  });
 
-      if (currentTool === 'pen') {
-        currentPath = { type: 'pen', color: color, points: [{x: startX, y: startY}] };
-      } else if (currentTool === 'highlighter') {
-        currentPath = { type: 'highlighter', color: color, points: [{x: startX, y: startY}] };
-      } else if (currentTool === 'eraser') {
-        eraseVectorAt(coords.x, coords.y);
-      }
+  let shareEnabled = false;
+  function mirrorToShared() {
+    if (!cloudUser) return;
+    const fs = window.__fs;
+    fs.setDoc(fs.doc(fs.db, 'shared', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll())).catch(() => {});
+  }
+  $('btnShare').addEventListener('click', () => {
+    if (!cloudUser) { toast('Connectez-vous pour partager votre emploi du temps.'); return; }
+    if (!shareEnabled) {
+      shareEnabled = true; mirrorToShared();
+      const url = location.origin + location.pathname + '?share=' + encodeURIComponent(cloudUser.uid);
+      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+      toast('Lien copié : ' + url);
+      $('btnShare').textContent = 'Partage (cliquer pour arrêter)';
+    } else {
+      shareEnabled = false;
+      const fs = window.__fs;
+      fs.deleteDoc(fs.doc(fs.db, 'shared', cloudUser.uid)).catch(() => {});
+      toast('Partage désactivé.');
+      $('btnShare').textContent = 'Partager';
     }
+  });
 
-    function draw(e) {
-      if (!isDrawing || !isDrawingActive) return;
-      e.preventDefault();
-      const coords = getCanvasCoords(e);
+  function applyViewOnlyUI() {
+    document.getElementById('editGroup1').style.display = viewOnly ? 'none' : 'flex';
+    document.getElementById('editGroup2').style.display = viewOnly ? 'none' : 'flex';
+    $('viewOnlyBadge').style.display = viewOnly ? 'inline-block' : 'none';
+    document.querySelectorAll('.slot').forEach((s) => s.classList.toggle('view-only', viewOnly));
+  }
 
-      if (currentTool === 'pen' || currentTool === 'highlighter') {
-        currentPath.points.push({x: coords.x, y: coords.y});
-        redrawVectorCanvas();
-        drawSingleItem(currentPath);
-      } else if (currentTool === 'eraser') {
-        eraseVectorAt(coords.x, coords.y);
-      }
-    }
+  function tryEnterShareView() {
+    const params = new URLSearchParams(location.search);
+    const shareUid = params.get('share');
+    if (!shareUid) return false;
+    viewOnly = true;
+    document.getElementById('authOverlay').style.display = 'none';
+    applyViewOnlyUI();
+    const fs = window.__fs;
+    fs.getDoc(fs.doc(fs.db, 'shared', shareUid)).then((snap) => {
+      if (!snap.exists()) { toast("Cet emploi du temps n'est plus partagé."); return; }
+      const data = snap.data();
+      courses = normalizeCourses(data.courses);
+      strokes = normalizeStrokes(data.strokes);
+      catalog = normalizeCatalog(data.catalog);
+      locations = normalizeLocations(data.locations);
+      renderCards(); redraw(); refreshFilterOptions(); positionNowLine();
+    }).catch(() => toast("Impossible de charger cet emploi du temps partagé."));
+    return true;
+  }
 
-    function eraseVectorAt(x, y) {
-      const items = weekDrawings[currentVisibleWeek] || [];
-      const radius = 15;
-      weekDrawings[currentVisibleWeek] = items.filter(item => {
-        return !item.points.some(p => Math.hypot(p.x - x, p.y - y) < radius);
-      });
-      redrawVectorCanvas();
-      saveVectorData();
-      pushGlobalHistory();
-    }
+  buildWeeks();
+  range = readJSON(LS.range, { from:1, to:CONFIG.weeks });
+  if (!(range.from>=1 && range.to<=CONFIG.weeks && range.from<=range.to)) range = { from:1, to:CONFIG.weeks };
+  fillRangeSelects();
 
-    function stopDrawing() {
-      if (isDrawing) {
-        isDrawing = false;
-        if (currentPath && currentTool !== 'eraser') {
-          if (!weekDrawings[currentVisibleWeek]) weekDrawings[currentVisibleWeek] = [];
-          weekDrawings[currentVisibleWeek].push(currentPath);
-        }
-        currentPath = null;
-        saveVectorData();
-        pushGlobalHistory();
-      }
-    }
+  courses = normalizeCourses(readJSON(LS.courses, {}));
+  strokes = normalizeStrokes(readJSON(LS.strokes, []));
+  catalog = normalizeCatalog(readJSON(LS.catalog, null));
+  locations = normalizeLocations(readJSON(LS.locations, null));
+  renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions();
+  history = [snapshot()]; historyIndex = 0;
 
-    function redrawVectorCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const items = weekDrawings[currentVisibleWeek] || [];
-      items.forEach(drawSingleItem);
-    }
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => { resizeCanvas(); positionNowLine(); });
+    ro.observe(container); ro.observe(weeksWrapper);
+  } else { window.addEventListener('resize', () => { resizeCanvas(); positionNowLine(); }); }
 
-    function drawSingleItem(item) {
-      if (!item.points || item.points.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(item.points[0].x, item.points[0].y);
-      for (let i = 1; i < item.points.length; i++) {
-        ctx.lineTo(item.points[i].x, item.points[i].y);
-      }
-
-      if (item.type === 'pen') {
-        ctx.strokeStyle = item.color || '#dc3545';
-        ctx.lineWidth = 2.5;
-        ctx.globalAlpha = 1.0;
-      } else if (item.type === 'highlighter') {
-        ctx.strokeStyle = item.color || '#ffeb3b';
-        ctx.lineWidth = 14;
-        ctx.globalAlpha = 0.4;
-      }
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-      ctx.globalAlpha = 1.0;
-    }
-
-    function clearCanvas() {
-      if (confirm('Effacer les annotations de cette semaine ?')) {
-        weekDrawings[currentVisibleWeek] = [];
-        redrawVectorCanvas();
-        saveVectorData();
-        pushGlobalHistory();
-      }
-    }
-
-    function saveVectorData() {
-      localStorage.setItem('timetable_drawings_vector', JSON.stringify(weekDrawings));
-    }
-
-    function loadVectorData() {
-      const saved = localStorage.getItem('timetable_drawings_vector');
-      weekDrawings = saved ? JSON.parse(saved) : {};
-      redrawVectorCanvas();
-    }
-
-    window.onload = () => {
-      loadAllWeeksData();
-      loadVectorData();
-      updateLocationsDatalist();
-      updateCoursesDatalist();
-      initGlobalHistory();
-
-      // Ciblage explicite sur la semaine actuelle (Semaine 2 en date du 25 septembre 2026)
-      const targetWeek = getCurrentWeekKey();
-      currentVisibleWeek = targetWeek;
-      weekSelect.value = targetWeek;
-
+  window.addEventListener('load', () => {
+    const shared = tryEnterShareView();
+    applyRange();
+    if (!shared) {
+      currentVisibleWeek = getCurrentWeekKey(); 
+      weekSelect.value = currentVisibleWeek;
+      resizeCanvas(); 
       setTimeout(() => {
         scrollToSelectedWeek();
-        resizeCanvas();
-      }, 100);
-
-      container.addEventListener('scroll', () => {
-        for (let w = 1; w <= 14; w++) {
-          const block = document.getElementById(`week-block-S${w}`);
-          if (block) {
-            const rect = block.getBoundingClientRect();
-            if (rect.top <= 100 && rect.bottom >= 100) {
-              if (currentVisibleWeek !== `S${w}`) {
-                currentVisibleWeek = `S${w}`;
-                weekSelect.value = currentVisibleWeek;
-                redrawVectorCanvas();
-              }
-              break;
-            }
-          }
-        }
-      });
-    };
-
-    function scrollToSelectedWeek() {
-      const selected = weekSelect.value;
-      const targetBlock = document.getElementById(`week-block-${selected}`);
-      if (targetBlock) {
-        targetBlock.scrollIntoView({ behavior: 'auto' }); // Défilement immédiat à l'ouverture
-      }
+      }, 150);
+      setSaveStatus('offline', 'Non connecté');
     }
-
-    function getAllWeeksData() {
-      const saved = localStorage.getItem('timetable_multi_weeks');
-      return saved ? JSON.parse(saved) : {};
-    }
-
-    function saveAllWeeksData() {
-      const allData = {};
-      document.querySelectorAll('.slot').forEach(slot => {
-        const card = slot.querySelector('.course-card');
-        if (card) {
-          const wKey = slot.dataset.week;
-          if (!allData[wKey]) allData[wKey] = [];
-          allData[wKey].push({
-            day: slot.dataset.day,
-            hour: slot.dataset.hour,
-            duration: card.dataset.duration || 2,
-            title: card.dataset.title,
-            subtitle: card.dataset.subtitle || '',
-            type: card.dataset.type,
-            loc: card.dataset.loc
-          });
-        }
-      });
-      localStorage.setItem('timetable_multi_weeks', JSON.stringify(allData));
-    }
-
-    function loadAllWeeksData() {
-      document.querySelectorAll('.slot').forEach(s => s.textContent = '');
-      const allData = getAllWeeksData();
-      Object.keys(allData).forEach(wKey => {
-        (allData[wKey] || []).forEach(item => {
-          const slot = document.querySelector(`.slot[data-week="${wKey}"][data-day="${item.day}"][data-hour="${item.hour}"]`);
-          if (slot) addCardToSlot(slot, item.title, item.subtitle, item.type, item.loc, parseInt(item.duration));
-        });
-      });
-    }
-
-    function loadAllWeeksDataSilent() {
-      document.querySelectorAll('.slot').forEach(s => s.textContent = '');
-      const allData = getAllWeeksData();
-      Object.keys(allData).forEach(wKey => {
-        (allData[wKey] || []).forEach(item => {
-          const slot = document.querySelector(`.slot[data-week="${wKey}"][data-day="${item.day}"][data-hour="${item.hour}"]`);
-          if (slot) addCardToSlot(slot, item.title, item.subtitle, item.type, item.loc, parseInt(item.duration));
-        });
-      });
-    }
-
-    function openModal(slot) {
-      selectedSlot = slot;
-      const parentCard = slot.querySelector('.course-card');
-      
-      const btnCopy = document.getElementById('btnModalCopy');
-      const btnPaste = document.getElementById('btnModalPaste');
-
-      if (parentCard) {
-        document.getElementById('courseSearch').value = parentCard.dataset.title || '';
-        document.getElementById('courseSubTitle').value = parentCard.dataset.subtitle || '';
-        document.getElementById('courseType').value = parentCard.dataset.type || 'theorie';
-        document.getElementById('courseLocation').value = parentCard.dataset.loc || '';
-        document.getElementById('courseDuration').value = parentCard.dataset.duration || '2';
-        btnCopy.style.display = 'inline-block';
-        btnPaste.style.display = 'none';
-      } else {
-        document.getElementById('courseSearch').value = '';
-        document.getElementById('courseSubTitle').value = '';
-        document.getElementById('courseType').value = 'theorie';
-        document.getElementById('courseLocation').value = '';
-        document.getElementById('courseDuration').value = '2';
-        btnCopy.style.display = 'none';
-        btnPaste.style.display = copiedCourseBuffer ? 'inline-block' : 'none';
-      }
-      updateLocationsDatalist();
-      updateCoursesDatalist();
-      document.getElementById('courseModal').style.display = 'flex';
-    }
-
-    function copyCurrentCourseModal() {
-      if (!selectedSlot) return;
-      const parentCard = selectedSlot.querySelector('.course-card');
-      if (parentCard) {
-        copiedCourseBuffer = {
-          title: parentCard.dataset.title,
-          subtitle: parentCard.dataset.subtitle || '',
-          type: parentCard.dataset.type,
-          loc: parentCard.dataset.loc,
-          duration: parseInt(parentCard.dataset.duration)
-        };
-      }
-      closeModal();
-    }
-
-    function pasteCourseModal() {
-      if (!selectedSlot || !copiedCourseBuffer) return;
-      if (checkOverlap(selectedSlot, copiedCourseBuffer.duration)) return;
-      selectedSlot.textContent = '';
-      addCardToSlot(
-        selectedSlot,
-        copiedCourseBuffer.title,
-        copiedCourseBuffer.subtitle,
-        copiedCourseBuffer.type,
-        copiedCourseBuffer.loc,
-        copiedCourseBuffer.duration
-      );
-      saveAllWeeksData();
-      pushGlobalHistory();
-      closeModal();
-      resizeCanvas();
-    }
-
-    function closeModal() { document.getElementById('courseModal').style.display = 'none'; }
-
-    function saveCourse() {
-      if (!selectedSlot) return;
-      const title = document.getElementById('courseSearch').value;
-      const subtitle = document.getElementById('courseSubTitle').value;
-      const type = document.getElementById('courseType').value;
-      const loc = document.getElementById('courseLocation').value;
-      const duration = parseInt(document.getElementById('courseDuration').value);
-
-      if (title.trim() !== '' && checkOverlap(selectedSlot, duration, selectedSlot)) return;
-
-      saveLocation(loc);
-      selectedSlot.textContent = '';
-      if (title.trim() !== '') addCardToSlot(selectedSlot, title, subtitle, type, loc, duration);
-      saveAllWeeksData();
-      pushGlobalHistory();
-      closeModal();
-      resizeCanvas();
-    }
-
-    function deleteCourse() {
-      if (selectedSlot) selectedSlot.textContent = '';
-      saveAllWeeksData();
-      pushGlobalHistory();
-      closeModal();
-      resizeCanvas();
-    }
-
-    function addCardToSlot(slot, title, subtitle, type, loc, duration = 2) {
-      const card = document.createElement('div');
-      card.className = `course-card ${type}`;
-      card.dataset.title = title;
-      card.dataset.subtitle = subtitle || '';
-      card.dataset.type = type;
-      card.dataset.loc = loc;
-      card.dataset.duration = duration;
-      
-      card.style.height = `calc(var(--row-height) * ${duration} - 2px)`;
-      card.draggable = true;
-
-      const topGroup = document.createElement('div');
-
-      const divHeader = document.createElement('div');
-      divHeader.className = 'header-title';
-      divHeader.textContent = title;
-      topGroup.appendChild(divHeader);
-
-      if (subtitle) {
-        const divSub = document.createElement('div');
-        divSub.className = 'subtitle';
-        divSub.textContent = subtitle;
-        topGroup.appendChild(divSub);
-      }
-
-      card.appendChild(topGroup);
-
-      if (loc) {
-        const divLoc = document.createElement('div');
-        divLoc.className = 'location';
-        divLoc.textContent = loc;
-        card.appendChild(divLoc);
-      }
-
-      card.onclick = (e) => {
-        e.stopPropagation();
-        if (!isDrawingActive) {
-          openModal(slot);
-        }
-      };
-
-      card.ondragstart = (e) => {
-        draggedCardData = {
-          title: card.dataset.title,
-          subtitle: card.dataset.subtitle,
-          type: card.dataset.type,
-          loc: card.dataset.loc,
-          duration: parseInt(card.dataset.duration),
-          sourceSlot: slot
-        };
-        e.dataTransfer.effectAllowed = 'move';
-      };
-
-      card.ontouchstart = () => {
-        if (isDrawingActive) return;
-        draggedCardData = {
-          title: card.dataset.title,
-          subtitle: card.dataset.subtitle,
-          type: card.dataset.type,
-          loc: card.dataset.loc,
-          duration: parseInt(card.dataset.duration),
-          sourceSlot: slot
-        };
-      };
-
-      card.ontouchend = (e) => {
-        if (!draggedCardData || isDrawingActive) return;
-        const touch = e.changedTouches[0];
-        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-        const targetSlot = targetEl ? targetEl.closest('.slot') : null;
-
-        if (targetSlot) {
-          if (!checkOverlap(targetSlot, draggedCardData.duration, draggedCardData.sourceSlot)) {
-            if (draggedCardData.sourceSlot) draggedCardData.sourceSlot.textContent = '';
-            targetSlot.textContent = '';
-            addCardToSlot(
-              targetSlot, 
-              draggedCardData.title, 
-              draggedCardData.subtitle,
-              draggedCardData.type, 
-              draggedCardData.loc, 
-              draggedCardData.duration
-            );
-            saveAllWeeksData();
-            pushGlobalHistory();
-            resizeCanvas();
-          }
-        }
-        draggedCardData = null;
-      };
-
-      slot.appendChild(card);
-    }
-
-    function copyPreviousWeek() {
-      const currentWeekNum = parseInt(currentVisibleWeek.replace('S', ''));
-      if (currentWeekNum <= 1) return alert("Pas de semaine précédente avant la S1 !");
-      const prevWeekKey = `S${currentWeekNum - 1}`;
-      const allData = getAllWeeksData();
-      if (confirm(`Copier la ${prevWeekKey} dans la ${currentVisibleWeek} ?`)) {
-        allData[currentVisibleWeek] = JSON.parse(JSON.stringify(allData[prevWeekKey] || []));
-        localStorage.setItem('timetable_multi_weeks', JSON.stringify(allData));
-        loadAllWeeksData();
-        pushGlobalHistory();
-        resizeCanvas();
-      }
-    }
-
-    function clearCurrentWeek() {
-      if (confirm(`Effacer l'emploi du temps de la semaine ${currentVisibleWeek} ?`)) {
-        document.querySelectorAll(`.slot[data-week="${currentVisibleWeek}"]`).forEach(s => s.textContent = '');
-        saveAllWeeksData();
-        pushGlobalHistory();
-        resizeCanvas();
-      }
-    }
-
-    function exportData() {
-      const payload = {
-        weeks: getAllWeeksData(),
-        drawings: weekDrawings,
-        locations: getStoredLocations(),
-        courses: getStoredCourses()
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `emploi_du_temps_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-    }
-
-    function importData(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target.result);
-          if (data.weeks) localStorage.setItem('timetable_multi_weeks', JSON.stringify(data.weeks));
-          if (data.drawings) localStorage.setItem('timetable_drawings_vector', JSON.stringify(data.drawings));
-          if (data.locations) localStorage.setItem('timetable_saved_locations', JSON.stringify(data.locations));
-          if (data.courses) localStorage.setItem('timetable_saved_courses', JSON.stringify(data.courses));
-          loadAllWeeksData();
-          loadVectorData();
-          updateLocationsDatalist();
-          updateCoursesDatalist();
-          initGlobalHistory();
-          alert("Données importées avec succès !");
-        } catch (err) {
-          alert("Fichier JSON invalide.");
-        }
-      };
-      reader.readAsText(file);
-    }
-  </script>
+    positionNowLine();
+  });
+})();
+</script>
 </body>
 </html>
