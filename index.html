@@ -109,7 +109,6 @@ body{ display:flex; flex-direction:column; }
   display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap;
 }
 .btn-draw{ background:#6f42c1; } .btn-copy{ background:#007bff; } .btn-clear{ background:#dc3545; }
-.btn-export{ background:#20c997; color:#111; } .btn-import{ background:#17a2b8; }
 .btn-logout{ background:#6c757d; } .btn-config{ background:#343a40; } .btn-history{ background:#495057; }
 .btn-filter{ background:#e8590c; } .btn-share{ background:#0ca678; }
 .btn-active{ outline:2px solid #333; box-shadow:0 0 4px rgba(0,0,0,.5); }
@@ -241,9 +240,6 @@ body{ display:flex; flex-direction:column; }
     <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
     <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
     <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
-    <button id="btnExport" class="btn-action btn-export">💾 Exporter</button>
-    <button id="btnImport" class="btn-action btn-import">📂 Importer</button>
-    <input type="file" id="importFile" accept=".json,application/json" hidden>
     <button id="btnShare" class="btn-action btn-share">🔗 Partager</button>
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
     <button id="btnLogout" class="btn-action btn-logout">🚪</button>
@@ -347,11 +343,12 @@ body{ display:flex; flex-direction:column; }
 
 <div class="modal" id="shareModal" role="dialog" aria-modal="true">
   <div class="modal-content" style="width: 300px;">
-    <h3 style="margin:0 0 8px;">Partager l'emploi du temps</h3>
-    <p class="modal-hint" style="margin-bottom:8px;">Choisissez le mode de partage :</p>
+    <h3 style="margin:0 0 8px;">Partager / Exporter</h3>
+    <p class="modal-hint" style="margin-bottom:8px;">Choisissez une action :</p>
     <div style="display:flex; flex-direction:column; gap:8px;">
-      <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien de partage</button>
-      <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px;">📄 Télécharger en PDF</button>
+      <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien</button>
+      <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px; background:#20c997; color:#111;">📄 Télécharger en PDF</button>
+      <button id="btnShareJSON" class="btn-action btn-import" style="justify-content:center; height:32px; background:#17a2b8;">💾 Télécharger en JSON</button>
       <button id="btnShareClose" class="btn-action btn-cancel" style="justify-content:center; height:32px;">Annuler</button>
     </div>
   </div>
@@ -526,7 +523,7 @@ onAuthStateChanged(auth, (user) => {
   }
   function writeJSON(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-    catch (e) { toast("Stockage local plein ou bloqué. Pensez à exporter une sauvegarde."); return false; }
+    catch (e) { toast("Stockage local plein ou bloqué."); return false; }
   }
 
   let courses = {};
@@ -793,7 +790,7 @@ onAuthStateChanged(auth, (user) => {
     $('filterPanel').classList.remove('open');
   });
 
-  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').style.display === 'flex'; }
+  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').style.display === 'flex' || $('configModal').style.display === 'flex'; }
 
   function fillCoursesDatalist() {
     const list = $('coursesDatalist'); list.innerHTML = '';
@@ -888,7 +885,7 @@ onAuthStateChanged(auth, (user) => {
   $('courseModal').addEventListener('click', (e) => { if (e.target === $('courseModal')) closeModal(); });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
+    if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').style.display = 'none'; $('configModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
 
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       if (isModalOpen()) return;
@@ -935,7 +932,6 @@ onAuthStateChanged(auth, (user) => {
     ctx.setTransform(dpr,0,0,dpr,0,0);
     redraw();
   }
-  function weekVisible() { return true; }
   function contentPts(s) {
     const n = weekNum(s.w); const top = blocks[n].offsetTop;
     return s.pts.map((p) => [p[0]*cssW, p[1] + top]);
@@ -1183,38 +1179,6 @@ onAuthStateChanged(auth, (user) => {
   $('btnCloseConfig').addEventListener('click', closeConfigModal);
   $('configModal').addEventListener('click', (e) => { if (e.target === $('configModal')) closeConfigModal(); }); 
 
-  function exportData() {
-    const data = Object.assign({ app:'emploi-du-temps', version:3, exported:new Date().toISOString() }, serializeAll());
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'emploi-du-temps-' + new Date().toISOString().slice(0,10) + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('Sauvegarde exportée.');
-  }
-
-  function importData(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onerror = () => toast('Lecture du fichier impossible.');
-    reader.onload = () => {
-      let data; try { data = JSON.parse(String(reader.result)); } catch(_) { toast("Ce fichier n'est pas un JSON valide."); return; }
-      if (!data || typeof data !== 'object' || typeof data.courses !== 'object') { toast("Ce fichier ne ressemble pas à une sauvegarde."); return; }
-      if (!confirm('Remplacer toutes les données actuelles par celles du fichier ?')) return;
-      courses = normalizeCourses(data.courses);
-      strokes = normalizeStrokes(data.strokes);
-      catalog = normalizeCatalog(data.catalog);
-      locations = normalizeLocations(data.locations);
-      saveLocalAll(); scheduleCloudSave(); pushHistory();
-      renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions(); redraw();
-      toast('Données importées.');
-    };
-    reader.readAsText(file);
-  }
-  $('btnExport').addEventListener('click', exportData);
-  $('btnImport').addEventListener('click', () => $('importFile').click());
-  $('importFile').addEventListener('change', (e) => { importData(e.target.files[0]); e.target.value = ''; });
-
   let cloudUser = null;
   let saveTimer = null;
   const SAVE_DELAY = 1500;
@@ -1325,6 +1289,17 @@ onAuthStateChanged(auth, (user) => {
       toolbar.style.display = 'flex';
       toast('Erreur lors de la génération du PDF.');
     });
+  });
+
+  $('btnShareJSON').addEventListener('click', () => {
+    $('shareModal').style.display = 'none';
+    const data = Object.assign({ app:'emploi-du-temps', version:3, exported:new Date().toISOString() }, serializeAll());
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'emploi-du-temps-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Fichier JSON téléchargé.');
   });
 
   function applyViewOnlyUI() {
