@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Mon Emploi du Temps XL</title>
-<!-- Intégration de html2pdf pour l'export PDF propre -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root {
@@ -32,11 +31,58 @@ body{ display:flex; flex-direction:column; }
 .auth-skip{ text-align:center; margin-top:4px; }
 
 .controls-box{
-  background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:32px; width:100%;
+  background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:36px; width:100%;
   display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; flex:0 0 auto; z-index:20;
 }
-.controls-group{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
-.controls-box select{ padding:2px 4px; font-size:11px; font-weight:bold; border-radius:3px; border:1px solid #ccc; background:#fff; color:#333; height:24px; }
+.controls-group{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+
+/* Style de la barre de navigation type image (Aujourd'hui < s2 > dates) */
+.nav-bar-custom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+}
+.btn-today {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 2px 4px;
+}
+.btn-today:hover { text-decoration: underline; }
+
+.week-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8f9fa;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.btn-week-nav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #007bff;
+  padding: 0 4px;
+}
+.btn-week-nav:hover { color: #0056b3; }
+.current-week-label { font-size: 12px; text-transform: lowercase; }
+
+.week-dates-display {
+  color: #0f5132;
+  font-weight: bold;
+  font-size: 13px;
+}
+
 .btn-action{
   padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:none; cursor:pointer; color:#fff;
   display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap;
@@ -61,7 +107,7 @@ body{ display:flex; flex-direction:column; }
 .range-bar select{ font-size:11px; padding:2px 4px; border-radius:3px; border:1px solid #ccc; }
 .viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; }
 
-/* PANNEAU FILTRE MODIFIÉ (STYLE IMAGE 3) */
+/* PANNEAU FILTRE (STYLE IMAGE 3) */
 .filter-panel{
   position:fixed; top:64px; right:10px; background:#fff; border:1px solid #ccc; border-radius:6px;
   box-shadow:0 4px 16px rgba(0,0,0,.2); padding:12px; width:280px; z-index:120; display:none; font-size:12px;
@@ -152,7 +198,16 @@ body{ display:flex; flex-direction:column; }
 
 <div class="controls-box">
   <div class="controls-group">
-    <select id="selectWeek" aria-label="Aller à la semaine"></select>
+    <!-- Barre de navigation inspirée de ton image : Aujourd'hui < sX > Dates -->
+    <div class="nav-bar-custom">
+      <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
+      <div class="week-switcher">
+        <button id="btnPrevWeek" class="btn-week-nav" title="Semaine précédente">&lt;</button>
+        <span id="currentWeekText" class="current-week-label">s1</span>
+        <button id="btnNextWeek" class="btn-week-nav" title="Semaine suivante">&gt;</button>
+      </div>
+      <span id="weekDatesText" class="week-dates-display">14/09/2026 - 20/09/2026</span>
+    </div>
     <span id="viewOnlyBadge" class="viewonly-badge" style="display:none;">👁️ Lecture seule</span>
   </div>
   <div class="controls-group" id="editGroup1">
@@ -183,7 +238,7 @@ body{ display:flex; flex-direction:column; }
   <button id="btnRangeAll" class="btn-action btn-copy" style="height:20px;">Tout afficher</button>
 </div>
 
-<!-- PANNEAU FILTRE MODIFIÉ (STYLE IMAGE 3) -->
+<!-- PANNEAU FILTRE -->
 <div id="filterPanel" class="filter-panel">
   <div class="filter-header">
     <span>Filtre</span>
@@ -584,34 +639,34 @@ onAuthStateChanged(auth, (user) => {
     saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards();
   }
 
-  const weeksWrapper = $('weeksWrapper'), weekSelect = $('selectWeek'), container = $('scrollContainer');
+  const weeksWrapper = $('weeksWrapper'), container = $('scrollContainer');
   function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
   function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
   
-  // Calcul précis et robuste de la semaine actuelle basé sur la date d'aujourd'hui
   function getCurrentWeekKey() {
     const now = new Date();
-    // Normaliser à minuit pour comparer les jours proprement
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
-    
     const diffTime = today - start;
     const diffDays = Math.floor(diffTime / 86400000);
-    
-    if (diffDays < 0) return 'S1'; // Avant le début de S1
+    if (diffDays < 0) return 'S1';
     let n = Math.floor(diffDays / 7) + 1; 
     n = Math.min(Math.max(n, 1), CONFIG.weeks);
     return weekKey(n);
   }
 
+  // Met à jour l'affichage de la barre de navigation personnalisée (ex: s2 et les dates)
+  function updateNavBarDisplay(wk) {
+    const n = weekNum(wk);
+    $('currentWeekText').textContent = 's' + n;
+    const mon = mondayOf(n);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    $('weekDatesText').textContent = fmtShort(mon) + '/' + mon.getFullYear() + ' - ' + fmtShort(sun) + '/' + sun.getFullYear();
+  }
+
   function buildWeeks() {
     for (let w = 1; w <= CONFIG.weeks; w++) {
       const wk = weekKey(w), mon = mondayOf(w), sun = new Date(mon); sun.setDate(sun.getDate()+6);
-
-      const opt = document.createElement('option'); opt.value = wk;
-      // SUPPRESSION DE L'ANNÉE /26 ICI AUSSI
-      opt.textContent = 'Semaine ' + w + ' (' + fmtShort(mon) + ' - ' + fmtShort(sun) + ')';
-      weekSelect.appendChild(opt);
 
       const block = document.createElement('div'); block.className = 'week-block'; block.id = 'week-block-' + wk;
       blocks[w] = block;
@@ -623,7 +678,6 @@ onAuthStateChanged(auth, (user) => {
       for (let d = 0; d < 7; d++) {
         const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
         const cell = document.createElement('div'); cell.className = 'header-cell';
-        // MODIFICATION DEMANDÉE : SUPPRESSION DU /26 DANS LES EN-TÊTES DE JOURS
         cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate);
         headerRow.appendChild(cell);
       }
@@ -694,15 +748,11 @@ onAuthStateChanged(auth, (user) => {
     }));
   }
 
-  // GESTION DU FILTRE MODIFIÉ (STYLE IMAGE 3)
   function refreshFilterOptions() {
     const selectCourse = $('filterSelectCourse');
-    // Conserver la première option par défaut
     selectCourse.innerHTML = '<option value="">Tous les cours</option>';
-    
     const namesSet = new Set();
     Object.keys(courses).forEach((wk) => courses[wk].forEach((it) => namesSet.add(it.title)));
-    
     Array.from(namesSet).sort().forEach((name) => {
       const opt = document.createElement('option');
       opt.value = name;
@@ -710,7 +760,6 @@ onAuthStateChanged(auth, (user) => {
       if (filter.course === name) opt.selected = true;
       selectCourse.appendChild(opt);
     });
-    
     $('filterSelectType').value = filter.type;
   }
 
@@ -1030,18 +1079,41 @@ onAuthStateChanged(auth, (user) => {
   $('btnCopyPrev').addEventListener('click', copyPreviousWeek);
   $('btnClearWeek').addEventListener('click', clearCurrentWeek);
 
-  function scrollToSelectedWeek() { 
-    const targetW = weekNum(weekSelect.value);
+  // Navigation de semaine par les flèches < sX > et Aujourd'hui
+  function goToWeek(wk) {
+    currentVisibleWeek = wk;
+    updateNavBarDisplay(wk);
+    const targetW = weekNum(wk);
     const t = blocks[targetW]; 
-    if (t) t.scrollIntoView({ behavior:'smooth' }); 
+    if (t) t.scrollIntoView({ behavior:'smooth' });
   }
-  weekSelect.addEventListener('change', scrollToSelectedWeek);
-  
+
+  $('btnPrevWeek').addEventListener('click', () => {
+    let n = weekNum(currentVisibleWeek) - 1;
+    if (n < 1) n = 1;
+    goToWeek(weekKey(n));
+  });
+
+  $('btnNextWeek').addEventListener('click', () => {
+    let n = weekNum(currentVisibleWeek) + 1;
+    if (n > CONFIG.weeks) n = CONFIG.weeks;
+    goToWeek(weekKey(n));
+  });
+
+  $('btnTodayNav').addEventListener('click', () => {
+    const todayWk = getCurrentWeekKey();
+    goToWeek(todayWk);
+  });
+
   function onScroll() {
     const probe = container.getBoundingClientRect().top + 150;
     for (let w = range.from; w <= range.to; w++) {
       const r = blocks[w].getBoundingClientRect();
-      if (r.top <= probe && r.bottom >= probe) { currentVisibleWeek = weekKey(w); weekSelect.value = currentVisibleWeek; break; }
+      if (r.top <= probe && r.bottom >= probe) { 
+        currentVisibleWeek = weekKey(w); 
+        updateNavBarDisplay(currentVisibleWeek);
+        break; 
+      }
     }
   } 
   container.addEventListener('scroll', onScroll, { passive:true });
@@ -1178,7 +1250,6 @@ onAuthStateChanged(auth, (user) => {
     window.__offlineChoice = true; cloudUser = null; setSaveStatus('offline', 'Hors ligne (non sauvegardé en ligne)');
   });
 
-  // GESTION DU BOUTON PARTAGER (LIEN OU PDF)
   $('btnShare').addEventListener('click', () => {
     $('shareModal').style.display = 'flex';
   });
@@ -1208,7 +1279,6 @@ onAuthStateChanged(auth, (user) => {
     $('shareModal').style.display = 'none';
     toast('Génération du PDF en cours...');
     
-    // Cacher temporairement les éléments inutiles pour le PDF
     const toolbar = document.querySelector('.controls-box');
     const rangeBar = document.querySelector('.range-bar');
     toolbar.style.display = 'none';
@@ -1282,13 +1352,14 @@ onAuthStateChanged(auth, (user) => {
     const shared = tryEnterShareView();
     applyRange();
     if (!shared) {
-      // POSITIONNEMENT AUTOMATIQUE ROBUSTE SUR LA SEMAINE ACTUELLE
       const targetWeek = getCurrentWeekKey();
       currentVisibleWeek = targetWeek; 
-      weekSelect.value = targetWeek;
+      updateNavBarDisplay(targetWeek);
       resizeCanvas(); 
       setTimeout(() => {
-        scrollToSelectedWeek();
+        const targetW = weekNum(targetWeek);
+        const t = blocks[targetW]; 
+        if (t) t.scrollIntoView({ behavior:'smooth' });
       }, 150);
       setSaveStatus('offline', 'Non connecté');
     }
