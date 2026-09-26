@@ -337,6 +337,12 @@
   }
 
   $('btnFilter').addEventListener('click', () => { refreshFilterOptions(); $('filterPanel').classList.toggle('open'); });
+  $('btnAccount').addEventListener('click', () => { $('accountPanel').classList.toggle('open'); });
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#btnAccount') && !e.target.closest('#accountPanel')) {
+      $('accountPanel').classList.remove('open');
+    }
+  });
   $('btnFilterApply').addEventListener('click', () => {
     filter.course = $('filterSelectCourse').value;
     filter.type = $('filterSelectType').value;
