@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mon Emploi du Temps XL</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <h2 id="authTitle">Connexion</h2>
+    <input type="email" id="email" placeholder="Adresse e-mail" autocomplete="email">
+    <input type="password" id="password" placeholder="Mot de passe" autocomplete="current-password">
+    <button id="btnAuth" type="button">Se connecter</button>
+    <button id="btnForgot" type="button" class="link-btn">Mot de passe oublié ?</button>
+    <p id="authMsg" class="auth-msg"></p>
+    <div class="link-btn" id="switchText" style="text-align:center;">Pas encore de compte ? S'inscrire</div>
+    <div class="auth-skip"><button id="btnSkip" type="button" class="link-btn">Continuer hors ligne (sans compte)</button></div>
+  </div>
+</div>
+
+<div class="controls-box">
+  <div class="controls-group">
+    <div class="nav-bar-custom">
+      <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
+      <div class="week-switcher">
+        <button id="btnPrevWeek" class="btn-week-nav" title="Semaine précédente">&lt;</button>
+        <span id="currentWeekText" class="current-week-label">s1</span>
+        <button id="btnNextWeek" class="btn-week-nav" title="Semaine suivante">&gt;</button>
+      </div>
+      <div class="date-range-container">
+        <button id="btnStartDate" class="week-dates-btn" title="Choisir la date de début"><span id="startDateText">14/09/2026</span></button>
+        <input type="date" id="startDatePicker" class="date-picker-hidden">
+        <span>-</span>
+        <button id="btnEndDate" class="week-dates-btn" title="Choisir la date de fin"><span id="endDateText">20/12/2026</span></button>
+        <input type="date" id="endDatePicker" class="date-picker-hidden">
+      </div>
+    </div>
+    <span id="viewOnlyBadge" class="viewonly-badge" style="display:none;">👁️ Lecture seule</span>
+  </div>
+  <div class="controls-group" id="editGroup1">
+    <button id="btnPencil" class="btn-action btn-draw">✏️ Dessiner</button>
+    <button id="btnUndo" class="btn-action btn-history" title="Annuler (Ctrl+Z)">↩️</button>
+    <button id="btnRedo" class="btn-action btn-history" title="Rétablir (Ctrl+Y)">↪️</button>
+    <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
+  </div>
+  <div class="controls-group" id="editGroup2">
+    <button id="btnConfigCourses" class="btn-action btn-config">⚙️ Cours</button>
+    <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
+    <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
+    <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
+    <button id="btnShare" class="btn-action btn-share">🔗 Partager</button>
+    <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
+    <button id="btnLogout" class="btn-action btn-logout">🚪</button>
+  </div>
+</div>
+
+<!-- PANNEAU FILTRE -->
+<div id="filterPanel" class="filter-panel">
+  <div class="filter-header">
+    <span>Filtre</span>
+    <button id="btnFilterClear" class="filter-clear">Effacer filtre</button>
+  </div>
+  <div class="filter-group">
+    <label>Cours</label>
+    <select id="filterSelectCourse">
+      <option value="">Tous les cours</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Type de réservation</label>
+    <select id="filterSelectType">
+      <option value="">Tous les types</option>
+      <option value="theorie">Théorie</option>
+      <option value="exercices">Exercices / TP</option>
+      <option value="labo">Laboratoire</option>
+      <option value="etude">Étude / Perso</option>
+    </select>
+  </div>
+  <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
+</div>
+
+<div id="drawingToolbar" class="drawing-toolbar">
+  <button id="toolPen" class="tool-btn selected" title="Crayon">✏️</button>
+  <button id="toolHighlighter" class="tool-btn" title="Surligneur">🖍️</button>
+  <button id="toolEraser" class="tool-btn" title="Gomme">🧹</button>
+  <input type="color" id="toolColor" class="tool-color-picker" value="#dc3545" title="Couleur du tracé">
+  <button id="btnClearCanvas" class="tool-btn" title="Effacer cette semaine">🗑️</button>
+</div>
+
+<div class="timetable-container" id="scrollContainer">
+  <canvas id="drawingCanvas"></canvas>
+  <div id="weeksWrapper"></div>
+</div>
+
+<div class="modal" id="courseModal" role="dialog" aria-modal="true">
+  <div class="modal-content">
+    <h3 style="margin:0 0 4px;">Détails de l'activité</h3>
+    <div>
+      <label for="courseSearch">Code / Nom du cours :</label>
+      <input type="text" id="courseSearch" list="coursesDatalist" placeholder="Ex: ELECH3001 - Théorie" autocomplete="off">
+      <datalist id="coursesDatalist"></datalist>
+    </div>
+    <div>
+      <label for="courseSubTitle">Intitulé complet :</label>
+      <input type="text" id="courseSubTitle" placeholder="Ex: Électricité appliquée" autocomplete="off">
+    </div>
+    <div>
+      <label for="courseDuration">Durée :</label>
+      <select id="courseDuration">
+        <option value="1">1 heure</option><option value="2" selected>2 heures</option>
+        <option value="3">3 heures</option><option value="4">4 heures</option>
+      </select>
+    </div>
+    <div>
+      <label for="courseType">Type / Couleur :</label>
+      <select id="courseType">
+        <option value="theorie">Théorie (Bleu)</option>
+        <option value="exercices">Exercices / TP (Vert Moyen)</option>
+        <option value="labo">Laboratoire / Pratique (Vert Clair)</option>
+        <option value="etude">Étude / Perso (Rouge)</option>
+      </select>
+    </div>
+    <div>
+      <label for="courseLocation">Local / Lieu :</label>
+      <input type="text" id="courseLocation" list="locationsList" placeholder="Ex: Auditoire FERRER..." autocomplete="off">
+      <datalist id="locationsList"></datalist>
+    </div>
+    <div id="modalError" class="modal-error" role="alert"></div>
+    <div class="btn-group">
+      <button id="btnSaveCourse" class="btn-action btn-save">Enregistrer</button>
+      <button id="btnModalCopy" class="btn-action btn-modal-copy">📋 Copier</button>
+      <button id="btnModalPaste" class="btn-action btn-modal-paste" style="display:none;">📋 Coller</button>
+      <button id="btnDeleteCourse" class="btn-action btn-delete">Supprimer</button>
+      <button id="btnCancelCourse" class="btn-action btn-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="configModal" role="dialog" aria-modal="true">
+  <div class="modal-content" style="width:380px;">
+    <h3 id="configModalTitle" style="margin:0 0 4px;">Gestion</h3>
+    <p id="configModalDesc" class="modal-hint"></p>
+    <textarea id="configTextarea" rows="10" placeholder="Un élément par ligne..."></textarea>
+    <div id="configError" class="modal-error" role="alert"></div>
+    <div class="btn-group">
+      <button id="btnSaveConfig" class="btn-action btn-save">Mettre à jour</button>
+      <button id="btnCloseConfig" class="btn-action btn-cancel">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="shareModal" role="dialog" aria-modal="true">
+  <div class="modal-content" style="width: 300px;">
+    <h3 style="margin:0 0 8px;">Partager / Exporter</h3>
+    <p class="modal-hint" style="margin-bottom:8px;">Choisissez une action :</p>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien</button>
+      <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px; background:#20c997; color:#111;">📄 Télécharger en PDF</button>
+      <button id="btnShareJSON" class="btn-action btn-import" style="justify-content:center; height:32px; background:#17a2b8;">💾 Télécharger en JSON</button>
+      <button id="btnShareClose" class="btn-action btn-cancel" style="justify-content:center; height:32px;">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="js/auth.js"></script>
+
+<script src="js/app.js"></script>
+</body>
+</html>
