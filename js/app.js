@@ -714,7 +714,7 @@
     }, 1200);
   }
 
-  async function loadCloudData(uid) {
+ async function loadCloudData(uid) {
     try {
       const fs = window.__fs;
       const snap = await fs.getDoc(fs.doc(fs.db, 'timetables', uid));
@@ -726,8 +726,13 @@
         locations = normalizeLocations(data.locations);
         typesListArray = normalizeTypes(data.types);
         saveLocalAll();
+      } else {
+        // Si le nouveau compte n'a pas de données en ligne, on réinitialise à vide !
+        courses = normalizeCourses({});
+        strokes = [];
+        saveLocalAll();
       }
-    } catch(e) { console.error('Erreur chargement cloud:', e); }
+    } catch(e) {}
   }
 
   function applyViewOnlyUI() {
