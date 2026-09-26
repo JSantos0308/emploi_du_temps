@@ -41,7 +41,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .btn-today {
   background: none;
   border: none;
-  color: #007bff;
+  color: #111;
   cursor: pointer;
   font-size: 13px;
   font-weight: bold;
