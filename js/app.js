@@ -702,6 +702,7 @@
         await fs.setDoc(fs.doc(fs.db, 'timetables', user.uid), serializeAll());
         if (dot) { dot.className = 'save-dot saved'; text.textContent = 'Enregistré'; }
       } catch (err) {
+        console.error('Erreur Firestore:', err);
         if (dot) { dot.className = 'save-dot error'; text.textContent = 'Erreur cloud'; }
       }
     }, 1200);
