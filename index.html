@@ -112,12 +112,13 @@
     </div>
     <div>
       <label for="courseType">Type :</label>
-      <select id="courseType">
-        <option value="theorie">Théorie</option>
-        <option value="exercices">Exercices / TP</option>
-        <option value="labo">Laboratoire / Pratique</option>
-        <option value="etude">Étude / Perso</option>
-      </select>
+      <input type="text" id="courseType" list="typesList" placeholder="Ex: Théorie, Exercices 1..." autocomplete="off">
+      <datalist id="typesList">
+        <option value="Théorie">
+        <option value="Exercices">
+        <option value="Laboratoire">
+        <option value="Étude">
+      </datalist>
     </div>
     <div>
       <label for="courseLocation">Local / Lieu :</label>
