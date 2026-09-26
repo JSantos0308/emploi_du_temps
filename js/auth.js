@@ -5,14 +5,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Remplace par ta configuration Firebase si tu souhaites activer le cloud
+// Votre configuration Firebase exacte
 const firebaseConfig = {
-  apiKey: "AIzaSy_ MOCK_KEY",
-  authDomain: "mock-project.firebaseapp.com",
-  projectId: "mock-project",
-  storageBucket: "mock-project.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:0000:web:0000"
+  apiKey: "AIzaSyADndGQPP7OjP0pK1wqfeZrdZQ84_iLrys",
+  authDomain: "emploi-du-temps-2ffd6.firebaseapp.com",
+  projectId: "emploi-du-temps-2ffd6",
+  storageBucket: "emploi-du-temps-2ffd6.firebasestorage.app",
+  messagingSenderId: "897752698709",
+  appId: "1:897752698709:web:a1ac2f8be097f3ad6a69dc",
+  measurementId: "G-NX917W181S"
 };
 
 const app = initializeApp(firebaseConfig);
