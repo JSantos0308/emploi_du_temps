@@ -60,7 +60,7 @@
     return {
       id: uid(), day, hour, duration: Math.min(Math.max(dur, 1), H - hour),
       title, subtitle: String(it.subtitle || '').slice(0, 120),
-      type: TYPES.includes(it.type) ? it.type : 'theorie',
+      type: String(it.type || 'Théorie').trim().slice(0, 40),
       loc: String(it.loc || '').slice(0, 80)
     };
   }
@@ -187,6 +187,14 @@
     return weekKey(n);
   }
 
+  function getBaseType(typeStr) {
+    const lower = (typeStr || '').toLowerCase();
+    if (lower.includes('exercice') || lower.includes('tp')) return 'exercices';
+    if (lower.includes('labo') || lower.includes('pratique')) return 'labo';
+    if (lower.includes('etude') || lower.includes('perso')) return 'etude';
+    return 'theorie';
+  }
+
   function updateNavBarDisplay(wk) {
     const n = weekNum(wk);
     $('currentWeekText').textContent = 's' + n;
@@ -284,7 +292,7 @@
     title.className = 'header-title';
     
     // Format : 'Nom' - 'type'
-    const typeLabels = { theorie: 'Théorie', exercices: 'Exercices', labo: 'Labo', etude: 'Étude' };
+    const typeLabels = { theorie: 'Théorie', s: 's', labo: 'Labo', etude: 'Étude' };
     const typeStr = typeLabels[item.type] || item.type;
     title.textContent = item.title + (typeStr ? ' - ' + typeStr : '');
     card.appendChild(title);
