@@ -60,10 +60,11 @@
     return {
       id: uid(), day, hour, duration: Math.min(Math.max(dur, 1), H - hour),
       title, subtitle: String(it.subtitle || '').slice(0, 120),
-      type: String(it.type || 'Théorie').trim().slice(0, 40),
+      type: String(it.type || '').trim().slice(0, 40), // <-- Vide par défaut s'il n'est pas défini
       loc: String(it.loc || '').slice(0, 80)
     };
   }
+  
   function normalizeCourses(raw) {
     const out = {};
     for (let w = 1; w <= CONFIG.weeks; w++) {
