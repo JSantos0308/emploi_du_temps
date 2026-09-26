@@ -22,6 +22,7 @@
 </div>
 
 <div class="controls-box">
+  <!-- Groupe GAUCHE : Aujourd'hui, < >, Date de début - Date de fin -->
   <div class="controls-group">
     <div class="nav-bar-custom">
       <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
@@ -41,13 +42,18 @@
     <span id="viewOnlyBadge" class="viewonly-badge" style="display:none;">👁️ Lecture seule</span>
     <button id="btnGoLogin" class="btn-action btn-share" style="display:none;">🔑 Se connecter</button>
   </div>
-  <div class="controls-group" id="editGroup1">
-    <button id="btnPencil" class="btn-action btn-draw">✏️ Dessiner</button>
+
+  <!-- Groupe MILIEU : Annuler/Rétablir (<-- -->), Dessiner, Copier précédente, Supprimer semaine -->
+  <div class="controls-group">
     <button id="btnUndo" class="btn-action btn-history" title="Annuler (Ctrl+Z)">↩️</button>
     <button id="btnRedo" class="btn-action btn-history" title="Rétablir (Ctrl+Y)">↪️</button>
-    <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
+    <button id="btnPencil" class="btn-action btn-draw">✏️ Dessiner</button>
+    <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
+    <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
   </div>
-  <div class="controls-group" id="editGroup2">
+
+  <!-- Groupe DROITE : Catalogue, Locaux, Filtre, Partager, Statut, Compte -->
+  <div class="controls-group">
     <!-- Panneau déroulant du Catalogue par onglets -->
     <div style="position: relative; display: inline-block;">
       <button id="btnCatalogToggle" class="btn-action btn-config">📚 Catalogue</button>
@@ -72,8 +78,7 @@
     </div>
 
     <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
-    <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
-    <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
+    <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
     <button id="btnShare" class="btn-action btn-share">🔗 Partager</button>
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
     <button id="btnAccount" class="btn-action btn-logout" title="Mon compte">👤</button>
