@@ -191,12 +191,14 @@
   function getBaseType(typeStr) {
     const lower = (typeStr || '').toLowerCase().trim();
     
+    if (!lower) return 'default'; // <-- Si le champ est vide, retourne 'default' (gris clair)
+    
     if (lower.includes('theorie') || lower.includes('théorie') || lower.includes('theo')) return 'theorie';
     if (lower.includes('exercice') || lower.includes('ex')) return 'exercices';
     if (lower.includes('labo') || lower.includes('pratique')) return 'labo';
     if (lower.includes('etude') || lower.includes('étude') || lower.includes('perso')) return 'etude';
     
-    return ''; // Par défaut, retourne vide si aucun type reconnu
+    return 'default'; // Si le texte saisi ne correspond à rien, met aussi du gris clair par défaut
   }
 
   function updateNavBarDisplay(wk) {
@@ -296,8 +298,9 @@
     const title = document.createElement('div'); 
     title.className = 'header-title';
     
-    // Affiche le nom + le type personnalisé (ex: "ELECH3001 - Exercices 1")
+    // N'affiche le type qu'S'il a été renseigné
     title.textContent = item.title + (item.type ? ' - ' + item.type : '');
+    card.style.height = 'calc(var(--row-height) * ' + item.duration + ' - 2px)';
     card.appendChild(title);
 
     if (item.subtitle) { 
