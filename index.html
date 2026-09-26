@@ -75,7 +75,7 @@
     <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
     <button id="btnShare" class="btn-action btn-share">🔗 Partager</button>
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
-    <button id="btnLogout" class="btn-action btn-logout">🚪</button>
+    <button id="btnAccount" class="btn-action btn-logout" title="Mon compte">👤</button>
   </div>
 </div>
 
@@ -103,7 +103,18 @@
   </div>
   <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
 </div>
-
+<!-- PANNEAU COMPTE -->
+<div id="accountPanel" class="filter-panel" style="width:220px;">
+  <div class="filter-header">
+    <span>Mon compte</span>
+  </div>
+  <div class="filter-group">
+    <label>Connecté en tant que</label>
+    <div id="accountEmailDisplay" style="font-size:12px; color:#333; word-break:break-all;"></div>
+  </div>
+  <button id="btnLogout" class="btn-action btn-clear" style="width:100%; justify-content:center; margin-top:8px;">🚪 Déconnexion</button>
+</div>
+  
 <div id="drawingToolbar" class="drawing-toolbar">
   <button id="toolPen" class="tool-btn selected" title="Crayon">✏️</button>
   <button id="toolHighlighter" class="tool-btn" title="Surligneur">🖍️</button>
