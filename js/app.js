@@ -412,13 +412,13 @@
     $('modalError').textContent = '';
     if (item) {
       $('courseSearch').value = item.title; 
-      $('courseType').value = item.type || 'Théorie'; 
+      $('courseType').value = item.type || ''; 
       $('courseLocation').value = item.loc; 
       $('courseDuration').value = String(item.duration);
       $('btnModalCopy').style.display = 'inline-block'; $('btnModalPaste').style.display = 'none'; $('btnDeleteCourse').style.display = 'inline-block';
     } else {
       $('courseSearch').value = ''; 
-      $('courseType').value = 'Théorie';
+      $('courseType').value = ''; // <--- MODIFIÉ ICI : vide par défaut au lieu de 'theorie'
       $('courseLocation').value = ''; 
       $('courseDuration').value = String(Math.min(2, H - hour));
       $('btnModalCopy').style.display = 'none'; $('btnModalPaste').style.display = copiedBuffer ? 'inline-block' : 'none';
@@ -427,7 +427,6 @@
     updateLocationsDatalist(); fillCoursesDatalist();
     $('courseModal').style.display = 'flex'; $('courseSearch').focus();
   }
-
   function closeModal() { $('courseModal').style.display = 'none'; }
 
   function saveCourse() {
