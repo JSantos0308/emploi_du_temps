@@ -107,7 +107,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .btn-filter{ color:#e8590c; } .btn-share{ color:#0ca678; }
 .btn-active{ outline:2px solid #333; box-shadow:0 0 4px rgba(0,0,0,.5); }
 .btn-action:disabled{ opacity:.4; cursor:not-allowed; }
-.save-status{ font-size:10.5px; color:#666; white-space:nowrap; display:flex; align-items:center; gap:4px; }
+.save-status{ display:none; }
 .save-dot{ width:7px; height:7px; border-radius:50%; background:#adb5bd; flex:none; }
 .save-dot.saving{ background:#f0ad4e; }
 .save-dot.saved{ background:#28a745; }
