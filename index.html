@@ -21,7 +21,7 @@
   </div>
 </div>
 
-<div "controls-box">
+<div class="controls-box">
   <div class="controls-group">
     <div class="nav-bar-custom">
       <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
@@ -47,15 +47,29 @@
     <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
   </div>
   <div class="controls-group" id="editGroup2">
-    <!-- Nouveau menu déroulant/barre pour le Catalogue -->
+    <!-- Panneau déroulant du Catalogue par onglets -->
     <div style="position: relative; display: inline-block;">
       <button id="btnCatalogToggle" class="btn-action btn-config">📚 Catalogue</button>
-      <div id="catalogToolbar" class="catalog-toolbar">
-        <button id="btnConfigCourses" class="btn-action btn-config">📖 Cours</button>
-        <button id="btnConfigTypes" class="btn-action btn-config">🏷️ Types</button>
+      <div id="catalogDropdownPanel" class="catalog-dropdown-panel">
+        <div class="catalog-tabs">
+          <button class="catalog-tab-btn active" data-tab="courses">📖 Cours</button>
+          <button class="catalog-tab-btn" data-tab="types">🏷️ Types</button>
+        </div>
+        
+        <div id="tabContentCourses" class="catalog-tab-content">
+          <p class="modal-hint" style="margin-bottom:6px;">Format : Nom | Intitulé (facultatif)</p>
+          <textarea id="panelCoursesTextarea" rows="7" placeholder="ELECH3001 | Électricité..."></textarea>
+          <button id="btnSavePanelCourses" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les cours</button>
+        </div>
+
+        <div id="tabContentTypes" class="catalog-tab-content" style="display:none;">
+          <p class="modal-hint" style="margin-bottom:6px;">Un type par ligne (ex: Exercices 1, TP...)</p>
+          <textarea id="panelTypesTextarea" rows="7" placeholder="Théorie&#10;Exercices..."></textarea>
+          <button id="btnSavePanelTypes" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les types</button>
+        </div>
       </div>
     </div>
-    
+
     <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
     <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
     <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
@@ -82,9 +96,9 @@
     <select id="filterSelectType">
       <option value="">Tous les types</option>
       <option value="theorie">Théorie</option>
-      <option value="exercices">Exercices / TP</option>
+      <option value="exercices">Exercices</option>
       <option value="labo">Laboratoire</option>
-      <option value="etude">Étude / Perso</option>
+      <option value="etude">Étude</option>
     </select>
   </div>
   <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
@@ -121,12 +135,7 @@
     <div>
       <label for="courseType">Type :</label>
       <input type="text" id="courseType" list="typesList" placeholder="Ex: Théorie, Exercices 1..." autocomplete="off">
-      <datalist id="typesList">
-        <option value="Théorie">
-        <option value="Exercices">
-        <option value="Laboratoire">
-        <option value="Étude">
-      </datalist>
+      <datalist id="typesList"></datalist>
     </div>
     <div>
       <label for="courseLocation">Local / Lieu :</label>
@@ -173,7 +182,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script type="module" src="js/auth.js"></script>
-
 <script src="js/app.js"></script>
 </body>
 </html>
