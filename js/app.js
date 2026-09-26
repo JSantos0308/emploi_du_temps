@@ -6,15 +6,15 @@
     weeks: 14,
     hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"],
     defaultCatalog: [],
-    defaultLocations: ["Bibliothèque","Maison"]
+    defaultLocations: ["Bibliothèque","Maison"],
+    defaultTypes: ["Théorie", "Exercices", "Laboratoire", "Étude"]
   };
 
   const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-  const TYPES = ["theorie","exercices","labo","etude"];
   const H = CONFIG.hours.length;
   const LS = {
     courses:'timetable_courses_v3', catalog:'timetable_catalog_v3', locations:'timetable_locations_v3',
-    strokes:'timetable_strokes_v3'
+    strokes:'timetable_strokes_v3', types:'timetable_types_v3'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -42,8 +42,10 @@
 
   let courses = {};
   let strokes = [];
-  let catalog = [];
-  let locations = [];
+  let catalog = readJSON(LS.catalog, CONFIG.defaultCatalog);
+  let locations = readJSON(LS.locations, CONFIG.defaultLocations);
+  let typesListArray = readJSON(LS.types, CONFIG.defaultTypes);
+
   let filter = { course: '', type: '' };
   let hovered = null;
   let dragged = null;
@@ -60,11 +62,10 @@
     return {
       id: uid(), day, hour, duration: Math.min(Math.max(dur, 1), H - hour),
       title, subtitle: String(it.subtitle || '').slice(0, 120),
-      type: String(it.type || '').trim().slice(0, 40), // <-- Vide par défaut s'il n'est pas défini
+      type: String(it.type || '').trim().slice(0, 40),
       loc: String(it.loc || '').slice(0, 80)
     };
   }
-  
   function normalizeCourses(raw) {
     const out = {};
     for (let w = 1; w <= CONFIG.weeks; w++) {
@@ -84,13 +85,18 @@
       return s.pts.every((p) => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]));
     }).map((s) => ({ w: s.w, kind: s.kind, color: /^#[0-9a-fA-F]{3,8}$/.test(s.color) ? s.color : '#dc3545', pts: s.pts }));
   }
- function normalizeCatalog(raw) {
+  function normalizeCatalog(raw) {
     if (!Array.isArray(raw)) return [];
     const out = raw.filter((c) => c && typeof c.name === 'string' && c.name.trim()).map((c) => ({
       name: c.name.trim().slice(0, 120),
       subtitle: String(c.subtitle || '').slice(0, 120)
     }));
-    return out; // Retourne le tableau (qui sera vide s'il n'y a rien)
+    return out;
+  }
+  function normalizeTypes(raw) {
+    if (!Array.isArray(raw)) return CONFIG.defaultTypes.slice();
+    const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 50)).slice(0, 100);
+    return out.length ? out : CONFIG.defaultTypes.slice();
   }
   function normalizeLocations(raw) {
     if (!Array.isArray(raw)) return CONFIG.defaultLocations.slice();
@@ -101,7 +107,7 @@
   function serializeAll() {
     const out = {};
     Object.keys(courses).forEach((k) => { out[k] = courses[k].map((c) => ({ day:c.day, hour:c.hour, duration:c.duration, title:c.title, subtitle:c.subtitle, type:c.type, loc:c.loc })); });
-    return { courses: out, strokes, catalog, locations };
+    return { courses: out, strokes, catalog, locations, types: typesListArray };
   }
   function saveLocalAll() {
     const s = serializeAll();
@@ -109,6 +115,7 @@
     writeJSON(LS.strokes, s.strokes);
     writeJSON(LS.catalog, s.catalog);
     writeJSON(LS.locations, s.locations);
+    writeJSON(LS.types, s.types);
   }
 
   let history = []; let historyIndex = -1; let restoring = false;
@@ -130,8 +137,9 @@
     strokes = normalizeStrokes(data.strokes);
     catalog = normalizeCatalog(data.catalog);
     locations = normalizeLocations(data.locations);
+    typesListArray = normalizeTypes(data.types);
     restoring = true;
-    renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions(); redraw();
+    renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); updateTypesDatalist(); refreshFilterOptions(); redraw();
     restoring = false;
     saveLocalAll(); scheduleCloudSave();
   }
@@ -165,10 +173,8 @@
 
   const weeksWrapper = $('weeksWrapper'), container = $('scrollContainer');
 
-  // Ajuste dynamiquement la hauteur d'une ligne (--row-height) pour que la plage horaire
-  // complète (8h à 19h, soit H créneaux) tienne entièrement dans la zone visible, sans scroll.
   function updateRowHeight() {
-    const headerH = 22; // doit correspondre à la hauteur CSS de .header-row
+    const headerH = 22;
     const available = container.clientHeight - headerH;
     const rh = Math.max(30, Math.floor(available / H));
     document.documentElement.style.setProperty('--row-height', rh + 'px');
@@ -176,36 +182,6 @@
   function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
   function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
   
-  function getCurrentWeekKey() {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
-    const diffTime = today - start;
-    const diffDays = Math.floor(diffTime / 86400000);
-    if (diffDays < 0) return 'S1';
-    let n = Math.floor(diffDays / 7) + 1; 
-    n = Math.min(Math.max(n, 1), CONFIG.weeks);
-    return weekKey(n);
-  }
-
-  function getBaseType(typeStr) {
-    const lower = (typeStr || '').toLowerCase().trim();
-    
-    if (!lower) return 'default'; // <-- Si le champ est vide, retourne 'default' (gris clair)
-    
-    if (lower.includes('theorie') || lower.includes('théorie') || lower.includes('theo')) return 'theorie';
-    if (lower.includes('exercice') || lower.includes('ex')) return 'exercices';
-    if (lower.includes('labo') || lower.includes('pratique')) return 'labo';
-    if (lower.includes('etude') || lower.includes('étude') || lower.includes('perso')) return 'etude';
-    
-    return 'default'; // Si le texte saisi ne correspond à rien, met aussi du gris clair par défaut
-  }
-
-  function updateNavBarDisplay(wk) {
-    const n = weekNum(wk);
-    $('currentWeekText').textContent = 's' + n;
-  }
-
   function updateRangeDisplay(startWk, endWk) {
     const startMon = mondayOf(weekNum(startWk));
     const endMon = mondayOf(weekNum(endWk));
@@ -229,18 +205,14 @@
       headerRows[w] = headerRow;
       const corner = document.createElement('div'); corner.className = 'header-cell'; corner.textContent = wk; headerRow.appendChild(corner);
       
-      const dayCells = [];
       for (let d = 0; d < 7; d++) {
         const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
         const cell = document.createElement('div'); cell.className = 'header-cell';
         cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate);
         
         const isToday = (dayDate.getTime() === todayDateOnly.getTime());
-        if (isToday) {
-          cell.classList.add('today-col');
-        }
+        if (isToday) cell.classList.add('today-col');
         headerRow.appendChild(cell);
-        dayCells.push(isToday);
       }
       block.appendChild(headerRow);
 
@@ -282,6 +254,16 @@
     updateRangeDisplay('S1', weekKey(CONFIG.weeks));
   }
 
+  function getBaseType(typeStr) {
+    const lower = (typeStr || '').toLowerCase().trim();
+    if (!lower) return 'default';
+    if (lower.includes('theorie') || lower.includes('théorie') || lower.includes('theo')) return 'theorie';
+    if (lower.includes('exercice') || lower.includes('ex')) return 'exercices';
+    if (lower.includes('labo') || lower.includes('pratique')) return 'labo';
+    if (lower.includes('etude') || lower.includes('étude') || lower.includes('perso')) return 'etude';
+    return 'default';
+  }
+
   function cardMatchesFilter(item) {
     if (filter.course && item.title !== filter.course) return false;
     if (filter.type && getBaseType(item.type) !== filter.type) return false;
@@ -297,10 +279,7 @@
 
     const title = document.createElement('div'); 
     title.className = 'header-title';
-    
-    // N'affiche le type qu'S'il a été renseigné
     title.textContent = item.title + (item.type ? ' - ' + item.type : '');
-    card.style.height = 'calc(var(--row-height) * ' + item.duration + ' - 2px)';
     card.appendChild(title);
 
     if (item.subtitle) { 
@@ -330,15 +309,10 @@
 
   function renderCards() {
     document.querySelectorAll('.course-card').forEach((c) => c.remove());
-    // Réinitialise toutes les cases : par défaut, elles réagissent normalement à la souris et gardent leur bordure.
     Object.values(slotMap).forEach((s) => { s.style.pointerEvents = ''; s.classList.remove('slot-hover', 'slot-covered', 'slot-no-inner-border'); });
     Object.keys(courses).forEach((wk) => courses[wk].forEach((item) => {
       const slot = slotMap[wk + '-' + item.day + '-' + item.hour];
       if (slot) slot.appendChild(buildCard(wk, item));
-      // Pour un cours de plusieurs heures : la case de départ ET les cases suivantes ne doivent
-      // afficher aucune ligne de séparation interne (sauf la toute dernière, qui marque la fin du bloc).
-      // Les cases après la première ne doivent plus intercepter la souris : le survol/clic doit
-      // atteindre la carte du cours, pas la case vide en dessous.
       for (let hh = item.hour; hh < item.hour + item.duration; hh++) {
         const s = slotMap[wk + '-' + item.day + '-' + hh];
         if (!s) continue;
@@ -355,8 +329,7 @@
     Object.keys(courses).forEach((wk) => courses[wk].forEach((it) => namesSet.add(it.title)));
     Array.from(namesSet).sort().forEach((name) => {
       const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
+      opt.value = name; opt.textContent = name;
       if (filter.course === name) opt.selected = true;
       selectCourse.appendChild(opt);
     });
@@ -371,10 +344,8 @@
     $('filterPanel').classList.remove('open');
   });
   $('btnFilterClear').addEventListener('click', () => {
-    filter.course = '';
-    filter.type = '';
-    refreshFilterOptions();
-    renderCards();
+    filter.course = ''; filter.type = '';
+    refreshFilterOptions(); renderCards();
     $('filterPanel').classList.remove('open');
   });
 
@@ -389,25 +360,110 @@
     const list = $('locationsList'); list.innerHTML = '';
     locations.forEach((loc) => { const o = document.createElement('option'); o.value = loc; list.appendChild(o); });
   }
+  function updateTypesDatalist() {
+    const list = $('typesList');
+    if (!list) return;
+    list.innerHTML = '';
+    typesListArray.forEach((t) => {
+      const o = document.createElement('option');
+      o.value = t;
+      list.appendChild(o);
+    });
+  }
 
-  $('courseSearch').addEventListener('input', (e) => {
-    const val = e.target.value.trim();
-    const exact = catalog.find((c) => c.name === val);
-    if (exact) { 
-      if (exact.subtitle && !$('courseSubTitle').value) $('courseSubTitle').value = exact.subtitle; 
-      return; 
+  // --- Gestion du panneau déroulant Catalogue par onglets ---
+  let catalogPanelOpen = false;
+  function toggleCatalogPanel() {
+    if (viewOnly) return;
+    catalogPanelOpen = !catalogPanelOpen;
+    const panel = $('catalogDropdownPanel');
+    panel.classList.toggle('open', catalogPanelOpen);
+    $('btnCatalogToggle').classList.toggle('btn-active', catalogPanelOpen);
+
+    if (catalogPanelOpen) {
+      $('panelCoursesTextarea').value = catalog.map((c) => c.subtitle ? c.name + ' | ' + c.subtitle : c.name).join('\n');
+      $('panelTypesTextarea').value = typesListArray.join('\n');
     }
-    const code = val.split(' - ')[0].trim();
-    if (code && !$('courseSubTitle').value) {
-      const byCode = catalog.find((c) => c.name.split(' - ')[0].trim() === code);
-      if (byCode) $('courseSubTitle').value = byCode.subtitle;
+  }
+
+  $('btnCatalogToggle').addEventListener('click', toggleCatalogPanel);
+
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#btnCatalogToggle') && !e.target.closest('#catalogDropdownPanel')) {
+      catalogPanelOpen = false;
+      $('catalogDropdownPanel').classList.remove('open');
+      $('btnCatalogToggle').classList.remove('btn-active');
     }
   });
 
-  // Écouteur de saisie simplifié (plus besoin de modifier un champ intitulé manuellement)
-  $('courseSearch').addEventListener('input', (e) => {
-    // La recherche se fait directement via le datalist du catalogue
+  document.querySelectorAll('.catalog-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.getAttribute('data-tab');
+      document.querySelectorAll('.catalog-tab-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (tabName === 'courses') {
+        $('tabContentCourses').style.display = 'block';
+        $('tabContentTypes').style.display = 'none';
+      } else {
+        $('tabContentCourses').style.display = 'none';
+        $('tabContentTypes').style.display = 'block';
+      }
+    });
   });
+
+  $('btnSavePanelCourses').addEventListener('click', () => {
+    const lines = $('panelCoursesTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
+    const parsed = lines.map((line) => {
+      const parts = line.split('|').map((p) => p.trim());
+      const name = parts[0] || '';
+      const subtitle = parts.length > 1 ? parts.slice(1).join(' | ') : '';
+      return { name, subtitle };
+    }).filter((c) => c.name);
+
+    catalog = normalizeCatalog(parsed);
+    updateCoursesDatalist();
+    saveLocalAll(); scheduleCloudSave(); pushHistory();
+    toast("Catalogue de cours mis à jour.");
+    catalogPanelOpen = false;
+    $('catalogDropdownPanel').classList.remove('open');
+    $('btnCatalogToggle').classList.remove('btn-active');
+  });
+
+  $('btnSavePanelTypes').addEventListener('click', () => {
+    const lines = $('panelTypesTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
+    typesListArray = normalizeTypes(lines);
+    updateTypesDatalist();
+    saveLocalAll(); scheduleCloudSave(); pushHistory();
+    toast("Liste des types mise à jour.");
+    catalogPanelOpen = false;
+    $('catalogDropdownPanel').classList.remove('open');
+    $('btnCatalogToggle').classList.remove('btn-active');
+  });
+
+  // Bouton de configuration des locaux existant
+  $('btnConfigLocations').addEventListener('click', () => openConfigModal('locations'));
+
+  function openConfigModal(type) {
+    if (viewOnly) return;
+    currentConfigType = type;
+    $('configError').textContent = '';
+    $('configModalTitle').textContent = "Liste des locaux";
+    $('configModalDesc').textContent = "Un local par ligne.";
+    $('configTextarea').value = locations.join('\n');
+    $('configModal').style.display = 'flex';
+  } 
+
+  let currentConfigType = null;
+  function closeConfigModal() { $('configModal').style.display = 'none'; }
+  function saveConfigModal() {
+    const lines = $('configTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
+    locations = normalizeLocations(lines);
+    updateLocationsDatalist();
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); closeConfigModal();
+    toast("Liste des locaux mise à jour.");
+  }
+  $('btnSaveConfig').addEventListener('click', saveConfigModal);
+  $('btnCloseConfig').addEventListener('click', closeConfigModal);
 
   function openModal(week, day, hour) {
     if (viewOnly) return;
@@ -422,15 +478,16 @@
       $('btnModalCopy').style.display = 'inline-block'; $('btnModalPaste').style.display = 'none'; $('btnDeleteCourse').style.display = 'inline-block';
     } else {
       $('courseSearch').value = ''; 
-      $('courseType').value = ''; // <--- MODIFIÉ ICI : vide par défaut au lieu de 'theorie'
+      $('courseType').value = ''; 
       $('courseLocation').value = ''; 
       $('courseDuration').value = String(Math.min(2, H - hour));
       $('btnModalCopy').style.display = 'none'; $('btnModalPaste').style.display = copiedBuffer ? 'inline-block' : 'none';
       $('btnDeleteCourse').style.display = 'none';
     }
-    updateLocationsDatalist(); fillCoursesDatalist();
+    updateLocationsDatalist(); fillCoursesDatalist(); updateTypesDatalist();
     $('courseModal').style.display = 'flex'; $('courseSearch').focus();
   }
+
   function closeModal() { $('courseModal').style.display = 'none'; }
 
   function saveCourse() {
@@ -438,7 +495,7 @@
     if (!title) { $('modalError').textContent = "Indiquez un nom de cours (ou utilisez « Supprimer »)."; return; }
     
     const week = modalCtx.week, day = modalCtx.day, hour = modalCtx.hour, editing = modalCtx.editing;
-    const type = $('courseType').value.trim() || 'Théorie';
+    const type = $('courseType').value.trim();
     const loc = $('courseLocation').value.trim();
     const duration = parseInt($('courseDuration').value, 10);
 
@@ -458,7 +515,6 @@
     saveLocation(loc);
     saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); closeModal();
   }
-  
   function deleteCourse() {
     const week = modalCtx.week, editing = modalCtx.editing;
     if (editing) { removeItem(week, editing.id); saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); }
@@ -610,403 +666,162 @@
     const pt = [round4(p.x/cssW), round1(p.y - currentTop)];
     const last = current.pts[current.pts.length-1];
     if (Math.hypot((pt[0]-last[0])*cssW, pt[1]-last[1]) < 1.5) return;
-    current.pts.push(pt); redraw();
+    current.pts.push(pt);
+    redraw();
   });
-  function stopDrawing() {
+  canvas.addEventListener('pointerup', () => {
     if (!current) return;
-    const s = current; current = null;
-    if (s.eraser) { if (erasedSomething) { saveLocalAll(); scheduleCloudSave(); pushHistory(); } return; }
-    if (s.pts.length < 2) { redraw(); return; }
-    strokes.push(s); saveLocalAll(); scheduleCloudSave(); pushHistory(); redraw();
-  }
-  canvas.addEventListener('pointerup', stopDrawing);
-  canvas.addEventListener('pointercancel', stopDrawing);
-
-  let nowLineEl = null;
-  function positionNowLine() {
-    if (nowLineEl) { nowLineEl.remove(); nowLineEl = null; }
-    const wk = getCurrentWeekKey(); const n = weekNum(wk);
-    const now = new Date();
-    const startMinutes = 8*60, endMinutes = startMinutes + H*60, curMinutes = now.getHours()*60+now.getMinutes();
-    if (curMinutes < startMinutes || curMinutes >= endMinutes) return;
-    const hourFloor = Math.floor((curMinutes - startMinutes)/60);
-    const frac = ((curMinutes - startMinutes) % 60) / 60;
-    const day = (now.getDay() + 6) % 7;
-    const slot = slotMap[wk + '-' + day + '-' + hourFloor];
-    if (!slot) return;
-    const line = document.createElement('div');
-    line.className = 'now-line';
-    line.style.top = (slot.offsetTop + frac*slot.offsetHeight) + 'px';
-    line.style.left = slot.offsetLeft + 'px';
-    line.style.width = slot.offsetWidth + 'px';
-    container.appendChild(line);
-    nowLineEl = line;
-  }
-  setInterval(positionNowLine, 60000);
-
-  function copyPreviousWeek() {
-    const n = weekNum(currentVisibleWeek); if (n <= 1) { toast('Pas de semaine précédente avant la S1 !'); return; }
-    const prev = weekKey(n-1);
-    if (confirm('Copier la ' + prev + ' dans la ' + currentVisibleWeek + ' ? (le contenu actuel sera remplacé)')) {
-      courses[currentVisibleWeek] = courses[prev].map((c) => Object.assign({}, c, { id: uid() }));
-      saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
-    }
-  }
-  function clearCurrentWeek() {
-    if (confirm("Effacer l'emploi du temps de la semaine " + currentVisibleWeek + ' ?')) {
-      courses[currentVisibleWeek] = [];
-      saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
-    }
-  }
-  $('btnCopyPrev').addEventListener('click', copyPreviousWeek);
-  $('btnClearWeek').addEventListener('click', clearCurrentWeek);
-
-  function goToWeek(wk) {
-    currentVisibleWeek = wk;
-    updateNavBarDisplay(wk);
-    const targetW = weekNum(wk);
-    const t = blocks[targetW]; 
-    if (t) t.scrollIntoView({ behavior:'smooth' });
-  }
-
-  $('btnPrevWeek').addEventListener('click', () => {
-    let n = weekNum(currentVisibleWeek) - 1;
-    if (n < 1) n = 1;
-    goToWeek(weekKey(n));
+    if (current.eraser) { if (erasedSomething) { saveLocalAll(); scheduleCloudSave(); pushHistory(); } current = null; return; }
+    if (current.pts.length > 1) { strokes.push(current); saveLocalAll(); scheduleCloudSave(); pushHistory(); }
+    current = null; redraw();
   });
 
-  $('btnNextWeek').addEventListener('click', () => {
-    let n = weekNum(currentVisibleWeek) + 1;
-    if (n > CONFIG.weeks) n = CONFIG.weeks;
-    goToWeek(weekKey(n));
+  // Liaison avec Firebase / Offline
+  window.addEventListener('app:offline-mode', () => { viewOnly = false; initApp(); });
+  window.addEventListener('app:signed-in', async (e) => {
+    viewOnly = false;
+    await loadCloudData(e.detail.uid);
+    initApp();
   });
+  window.addEventListener('app:signed-out', () => { viewOnly = true; initApp(); });
+  window.addEventListener('app:before-logout', () => { saveLocalAll(); });
 
-  $('btnTodayNav').addEventListener('click', () => {
-    const todayWk = getCurrentWeekKey();
-    goToWeek(todayWk);
-  });
-
-  // --- Gestion de la barre d'outils Catalogue ---
-  let catalogToolbarActive = false;
-  function toggleCatalogToolbar() {
-    if (viewOnly) return;
-    catalogToolbarActive = !catalogToolbarActive;
-    $('catalogToolbar').classList.toggle('active', catalogToolbarActive);
-    $('btnCatalogToggle').classList.toggle('btn-active', catalogToolbarActive);
-  }
-
-  $('btnCatalogToggle').addEventListener('click', toggleCatalogToolbar);
-
-  // Fermer la barre du catalogue si on clique en dehors
-  window.addEventListener('click', (e) => {
-    if (!e.target.closest('#btnCatalogToggle') && !e.target.closest('#catalogToolbar')) {
-      catalogToolbarActive = false;
-      $('catalogToolbar').classList.remove('active');
-      $('btnCatalogToggle').classList.remove('btn-active');
-    }
-  });
-
-  // Actions des sous-boutons du catalogue
-  $('btnConfigCourses').addEventListener('click', () => {
-    catalogToolbarActive = false;
-    $('catalogToolbar').classList.remove('active');
-    $('btnCatalogToggle').classList.remove('btn-active');
-    openConfigModal('courses');
-  });
-
-  $('btnConfigTypes').addEventListener('click', () => {
-    catalogToolbarActive = false;
-    $('catalogToolbar').classList.remove('active');
-    $('btnCatalogToggle').classList.remove('btn-active');
-    openConfigModal('types');
-  });
-  
-  function dateToWeekNum(dateVal) {
-    const selectedDate = new Date(dateVal);
-    const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
-    const diffTime = selectedDate - start;
-    const diffDays = Math.floor(diffTime / 86400000);
-    if (diffDays < 0) return 1;
-    let n = Math.floor(diffDays / 7) + 1;
-    return Math.min(Math.max(n, 1), CONFIG.weeks);
-  }
-
-  function applyDateRangeFilter() {
-    const startInput = $('startDatePicker').value;
-    const endInput = $('endDatePicker').value;
-    
-    let startW = 1;
-    let endW = CONFIG.weeks;
-
-    if (startInput) startW = dateToWeekNum(startInput);
-    if (endInput) endW = dateToWeekNum(endInput);
-
-    if (startW > endW) {
-      toast("La date de début doit être antérieure à la date de fin.");
-      return;
-    }
-
-    for (let w = 1; w <= CONFIG.weeks; w++) {
-      if (w >= startW && w <= endW) {
-        blocks[w].style.display = '';
-      } else {
-        blocks[w].style.display = 'none';
-      }
-    }
-    updateRangeDisplay(weekKey(startW), weekKey(endW));
-    resizeCanvas();
-    toast("Affichage filtré de la semaine " + startW + " à la semaine " + endW);
-  }
-
-  $('btnStartDate').addEventListener('click', () => {
-    $('startDatePicker').showPicker?.() || $('startDatePicker').click();
-  });
-  $('startDatePicker').addEventListener('change', applyDateRangeFilter);
-
-  $('btnEndDate').addEventListener('click', () => {
-    $('endDatePicker').showPicker?.() || $('endDatePicker').click();
-  });
-  $('endDatePicker').addEventListener('change', applyDateRangeFilter);
-
-  function onScroll() {
-    const probe = container.getBoundingClientRect().top + 150;
-    for (let w = 1; w <= CONFIG.weeks; w++) {
-      if (blocks[w].style.display === 'none') continue;
-      const r = blocks[w].getBoundingClientRect();
-      if (r.top <= probe && r.bottom >= probe) { 
-        currentVisibleWeek = weekKey(w); 
-        updateNavBarDisplay(currentVisibleWeek);
-        break; 
-      }
-    }
-  } 
-  container.addEventListener('scroll', onScroll, { passive:true });
-
-  let currentConfigType = null;
-  function openConfigModal(type) {
-    if (viewOnly) return;
-    currentConfigType = type;
-    $('configError').textContent = '';
-    if (type === 'courses') {
-      $('configModalTitle').textContent = "Catalogue de cours";
-      $('configModalDesc').textContent = "Format : Nom | Intitulé complet (l'intitulé est facultatif).";
-      $('configTextarea').value = catalog.map((c) => {
-        return c.subtitle ? c.name + ' | ' + c.subtitle : c.name;
-      }).join('\n');
-    } else {
-      $('configModalTitle').textContent = "Liste des locaux";
-      $('configModalDesc').textContent = "Un local par ligne.";
-      $('configTextarea').value = locations.join('\n');
-    }
-    $('configModal').style.display = 'flex';
-  } 
-
-  function closeConfigModal() { $('configModal').style.display = 'none'; }
-
-  function saveConfigModal() {
-    const lines = $('configTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
-    if (currentConfigType === 'courses') {
-      const parsed = lines.map((line) => {
-        const parts = line.split('|').map((p) => p.trim());
-        const name = parts[0] || '';
-        const subtitle = parts.length > 1 ? parts.slice(1).join(' | ') : '';
-        return { name, subtitle };
-      }).filter((c) => c.name);
-
-      catalog = normalizeCatalog(parsed);
-      updateCoursesDatalist(); toast("Catalogue de cours mis à jour.");
-    } else {
-      locations = normalizeLocations(lines);
-      updateLocationsDatalist(); toast("Liste des locaux mise à jour.");
-    }
-    saveLocalAll(); scheduleCloudSave(); pushHistory(); closeConfigModal();
-  }
-  $('btnConfigCourses').addEventListener('click', () => openConfigModal('courses'));
-  $('btnConfigLocations').addEventListener('click', () => openConfigModal('locations'));
-  $('btnSaveConfig').addEventListener('click', saveConfigModal);
-  $('btnCloseConfig').addEventListener('click', closeConfigModal);
-  $('configModal').addEventListener('click', (e) => { if (e.target === $('configModal')) closeConfigModal(); }); 
-
-  let cloudUser = null;
-  let saveTimer = null;
-  const SAVE_DELAY = 1500;
-
-  function setSaveStatus(kind, text) {
-    $('saveDot').className = 'save-dot' + (kind ? ' ' + kind : '');
-    $('saveText').textContent = text;
-  }
-
-  function doCloudSaveNow() {
-    if (!cloudUser || viewOnly) return;
-    clearTimeout(saveTimer); saveTimer = null;
-    setSaveStatus('saving', 'Enregistrement...');
-    const fs = window.__fs;
-    fs.setDoc(fs.doc(fs.db, 'users', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll()))
-      .then(() => {
-        setSaveStatus('saved', 'Enregistré');
-      })
-      .catch(() => setSaveStatus('error', 'Échec de sauvegarde'));
-  }
+  let cloudSaveTimer = null;
   function scheduleCloudSave() {
-    if (!cloudUser || viewOnly) return;
-    setSaveStatus('saving', 'Modifications en attente...');
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(doCloudSaveNow, SAVE_DELAY);
+    if (viewOnly || !window.__auth || !window.__auth.currentUser || window.__auth.currentUser.isAnonymous) return;
+    const dot = $('saveDot'), text = $('saveText');
+    if (dot) { dot.className = 'save-dot saving'; text.textContent = 'Enregistrement...'; }
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(async () => {
+      try {
+        const user = window.__auth.currentUser;
+        if (!user) return;
+        const fs = window.__fs;
+        await fs.setDoc(fs.doc(fs.db, 'timetables', user.uid), serializeAll());
+        if (dot) { dot.className = 'save-dot saved'; text.textContent = 'Enregistré'; }
+      } catch (err) {
+        if (dot) { dot.className = 'save-dot error'; text.textContent = 'Erreur cloud'; }
+      }
+    }, 1200);
   }
-  function flushCloudSave() { if (saveTimer) doCloudSaveNow(); }
 
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushCloudSave(); });
-  window.addEventListener('pagehide', flushCloudSave);
-
-  function loadFromCloud() {
-    if (!cloudUser) return;
-    const fs = window.__fs;
-    fs.getDoc(fs.doc(fs.db, 'users', cloudUser.uid)).then((snap) => {
+  async function loadCloudData(uid) {
+    try {
+      const fs = window.__fs;
+      const snap = await fs.getDoc(fs.doc(fs.db, 'timetables', uid));
       if (snap.exists()) {
         const data = snap.data();
         courses = normalizeCourses(data.courses);
         strokes = normalizeStrokes(data.strokes);
         catalog = normalizeCatalog(data.catalog);
         locations = normalizeLocations(data.locations);
+        typesListArray = normalizeTypes(data.types);
+        saveLocalAll();
       }
-      saveLocalAll();
-      renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions(); redraw(); positionNowLine();
-      history = [snapshot()]; historyIndex = 0; updateHistoryButtons();
-      setSaveStatus('saved', 'Synchronisé');
-    }).catch(() => setSaveStatus('error', 'Connexion au cloud impossible'));
+    } catch(e) {}
   }
 
-  window.addEventListener('app:signed-in', (e) => {
-    cloudUser = e.detail; window.__offlineChoice = false;
-    viewOnly = false; applyViewOnlyUI();
-    loadFromCloud();
-  });
-  window.addEventListener('app:signed-out', () => {
-    cloudUser = null; setSaveStatus('offline', 'Non connecté');
-  });
-  window.addEventListener('app:before-logout', () => { flushCloudSave(); });
-  window.addEventListener('app:offline-mode', () => {
-    window.__offlineChoice = true; cloudUser = null; setSaveStatus('offline', 'Hors ligne (non sauvegardé en ligne)');
-  });
+  function initApp() {
+    courses = normalizeCourses(readJSON(LS.courses, {}));
+    strokes = normalizeStrokes(readJSON(LS.strokes, []));
+    catalog = normalizeCatalog(readJSON(LS.catalog, CONFIG.defaultCatalog));
+    locations = normalizeLocations(readJSON(LS.locations, CONFIG.defaultLocations));
+    typesListArray = normalizeTypes(readJSON(LS.types, CONFIG.defaultTypes));
 
-  $('btnShare').addEventListener('click', () => {
-    $('shareModal').style.display = 'flex';
-  });
+    weeksWrapper.innerHTML = '';
+    buildWeeks();
+    updateRowHeight();
+    renderCards();
+    updateCoursesDatalist();
+    updateLocationsDatalist();
+    updateTypesDatalist();
+    pushHistory();
+    resizeCanvas();
+  }
 
-  $('btnShareClose').addEventListener('click', () => {
+  window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); });
+  
+  // Lancement initial
+  initApp();
+
+  // Partage / Exporter
+  $('btnShare').addEventListener('click', () => { $('shareModal').style.display = 'flex'; });
+  $('btnShareClose').addEventListener('click', () => { $('shareModal').style.display = 'none'; });
+  $('btnShareLink').addEventListener('click', () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast("Lien copié dans le presse-papier !");
     $('shareModal').style.display = 'none';
   });
-
-  $('btnShareLink').addEventListener('click', async () => {
+  $('btnShareJSON').addEventListener('click', () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(serializeAll(), null, 2));
+    const dl = document.createElement('a');
+    dl.setAttribute("href", dataStr);
+    dl.setAttribute("download", "emploi_du_temps_xl.json");
+    document.body.appendChild(dl);
+    dl.click();
+    dl.remove();
     $('shareModal').style.display = 'none';
-    if (!cloudUser) { 
-      toast('Connectez-vous pour générer un lien de partage cloud.'); 
-      return; 
-    }
-    const fs = window.__fs;
-    try {
-      await fs.setDoc(fs.doc(fs.db, 'shared', cloudUser.uid), Object.assign({ updatedAt: new Date().toISOString() }, serializeAll()));
-      const url = location.origin + location.pathname + '?share=' + encodeURIComponent(cloudUser.uid);
-      if (navigator.clipboard) await navigator.clipboard.writeText(url);
-      toast('Lien de partage copié dans le presse-papier !');
-    } catch (e) {
-      toast('Erreur lors de la création du lien de partage.');
-    }
   });
-
   $('btnSharePDF').addEventListener('click', () => {
     $('shareModal').style.display = 'none';
-    toast('Génération du PDF en cours...');
-    
-    const toolbar = document.querySelector('.controls-box');
-    toolbar.style.display = 'none';
-
-    const element = document.getElementById('weeksWrapper');
-    const opt = {
-      margin:       5,
-      filename:     'emploi-du-temps.pdf',
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
-
-    html2pdf().from(element).set(opt).save().then(() => {
-      toolbar.style.display = 'flex';
-      toast('PDF téléchargé avec succès !');
-    }).catch(() => {
-      toolbar.style.display = 'flex';
-      toast('Erreur lors de la génération du PDF.');
-    });
+    toast("Génération du PDF en cours...");
+    const element = weeksWrapper;
+    html2pdf().from(element).save('emploi_du_temps.pdf');
   });
 
-  $('btnShareJSON').addEventListener('click', () => {
-    $('shareModal').style.display = 'none';
-    const data = Object.assign({ app:'emploi-du-temps', version:3, exported:new Date().toISOString() }, serializeAll());
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'emploi-du-temps-' + new Date().toISOString().slice(0,10) + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('Fichier JSON téléchargé.');
-  });
-
-  function applyViewOnlyUI() {
-    document.getElementById('editGroup1').style.display = viewOnly ? 'none' : 'flex';
-    document.getElementById('editGroup2').style.display = viewOnly ? 'none' : 'flex';
-    $('viewOnlyBadge').style.display = viewOnly ? 'inline-block' : 'none';
-    document.querySelectorAll('.slot').forEach((s) => s.classList.toggle('view-only', viewOnly));
+  // Navigation semaines
+  function goToWeek(wk) {
+    currentVisibleWeek = wk;
+    updateNavBarDisplay(wk);
+    const b = blocks[weekNum(wk)];
+    if (b) container.scrollTop = b.offsetTop - 5;
   }
 
-  function tryEnterShareView() {
-    const params = new URLSearchParams(location.search);
-    const shareUid = params.get('share');
-    if (!shareUid) return false;
-    viewOnly = true;
-    document.getElementById('authOverlay').style.display = 'none';
-    applyViewOnlyUI();
-    const fs = window.__fs;
-    fs.getDoc(fs.doc(fs.db, 'shared', shareUid)).then((snap) => {
-      if (!snap.exists()) { toast("Cet emploi du temps n'est plus partagé."); return; }
-      const data = snap.data();
-      courses = normalizeCourses(data.courses);
-      strokes = normalizeStrokes(data.strokes);
-      catalog = normalizeCatalog(data.catalog);
-      locations = normalizeLocations(data.locations);
-      renderCards(); redraw(); refreshFilterOptions(); positionNowLine();
-    }).catch(() => toast("Impossible de charger cet emploi du temps partagé."));
-    return true;
+  $('btnTodayNav').addEventListener('click', () => goToWeek(getCurrentWeekKey()));
+  $('btnPrevWeek').addEventListener('click', () => {
+    let n = weekNum(currentVisibleWeek) - 1;
+    if (n < 1) n = 1;
+    goToWeek(weekKey(n));
+  });
+  $('btnNextWeek').addEventListener('click', () => {
+    let n = weekNum(currentVisibleWeek) + 1;
+    if (n > CONFIG.weeks) n = CONFIG.weeks;
+    goToWeek(weekKey(n));
+  });
+
+  function getCurrentWeekKey() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
+    const diffTime = today - start;
+    const diffDays = Math.floor(diffTime / 86400000);
+    if (diffDays < 0) return 'S1';
+    let n = Math.floor(diffDays / 7) + 1; 
+    n = Math.min(Math.max(n, 1), CONFIG.weeks);
+    return weekKey(n);
+  }
+  function updateNavBarDisplay(wk) {
+    $('currentWeekText').textContent = 's' + weekNum(wk);
   }
 
-  buildWeeks();
-  updateRowHeight();
-
-  courses = normalizeCourses(readJSON(LS.courses, {}));
-  strokes = normalizeStrokes(readJSON(LS.strokes, []));
-  catalog = normalizeCatalog(readJSON(LS.catalog, null));
-  locations = normalizeLocations(readJSON(LS.locations, null));
-  renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); refreshFilterOptions();
-  history = [snapshot()]; historyIndex = 0;
-
-  if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(() => { updateRowHeight(); resizeCanvas(); positionNowLine(); });
-    ro.observe(container); ro.observe(weeksWrapper);
-  } else { window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); positionNowLine(); }); }
-
-  window.addEventListener('load', () => {
-    updateRowHeight();
-    const shared = tryEnterShareView();
-    if (!shared) {
-      const targetWeek = getCurrentWeekKey();
-      currentVisibleWeek = targetWeek; 
-      updateNavBarDisplay(targetWeek);
-      resizeCanvas(); 
-      setTimeout(() => {
-        const targetW = weekNum(targetWeek);
-        const t = blocks[targetW]; 
-        if (t) t.scrollIntoView({ behavior:'smooth' });
-      }, 150);
-      setSaveStatus('offline', 'Non connecté');
-    }
-    positionNowLine();
+  $('btnClearWeek').addEventListener('click', () => {
+    if (viewOnly) return;
+    if (!confirm("Voulez-vous vraiment effacer tous les cours de cette semaine ?")) return;
+    const wk = currentVisibleWeek;
+    courses[wk] = [];
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
+    toast("Semaine effacée.");
   });
+
+  $('btnCopyPrev').addEventListener('click', () => {
+    if (viewOnly) return;
+    const n = weekNum(currentVisibleWeek);
+    if (n <= 1) { toast("C'est la première semaine."); return; }
+    const prevWk = weekKey(n - 1);
+    const curWk = weekKey(n);
+    courses[curWk] = (courses[prevWk] || []).map((c) => ({ ...c, id: uid() }));
+    saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
+    toast("Cours de la semaine précédente copiés.");
+  });
+
 })();
