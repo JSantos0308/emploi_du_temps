@@ -183,6 +183,15 @@
   }
 
   const weeksWrapper = $('weeksWrapper'), container = $('scrollContainer');
+
+  // Ajuste dynamiquement la hauteur d'une ligne (--row-height) pour que la plage horaire
+  // complète (8h à 19h, soit H créneaux) tienne entièrement dans la zone visible, sans scroll.
+  function updateRowHeight() {
+    const headerH = 22; // doit correspondre à la hauteur CSS de .header-row
+    const available = container.clientHeight - headerH;
+    const rh = Math.max(30, Math.floor(available / H));
+    document.documentElement.style.setProperty('--row-height', rh + 'px');
+  }
   function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
   function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
   
@@ -895,6 +904,7 @@
   }
 
   buildWeeks();
+  updateRowHeight();
 
   courses = normalizeCourses(readJSON(LS.courses, {}));
   strokes = normalizeStrokes(readJSON(LS.strokes, []));
@@ -904,11 +914,12 @@
   history = [snapshot()]; historyIndex = 0;
 
   if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(() => { resizeCanvas(); positionNowLine(); });
+    const ro = new ResizeObserver(() => { updateRowHeight(); resizeCanvas(); positionNowLine(); });
     ro.observe(container); ro.observe(weeksWrapper);
-  } else { window.addEventListener('resize', () => { resizeCanvas(); positionNowLine(); }); }
+  } else { window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); positionNowLine(); }); }
 
   window.addEventListener('load', () => {
+    updateRowHeight();
     const shared = tryEnterShareView();
     if (!shared) {
       const targetWeek = getCurrentWeekKey();
