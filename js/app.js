@@ -731,12 +731,14 @@
   }
 
   function applyViewOnlyUI() {
-    const badge = $('viewOnlyBadge'), g1 = $('editGroup1'), g2 = $('editGroup2');
+    const badge = $('viewOnlyBadge'), g1 = $('editGroup1'), g2 = $('editGroup2'), loginBtn = $('btnGoLogin');
     if (badge) badge.style.display = viewOnly ? 'inline-block' : 'none';
     if (g1) g1.style.display = viewOnly ? 'none' : 'flex';
     if (g2) g2.style.display = viewOnly ? 'none' : 'flex';
+    if (loginBtn) loginBtn.style.display = viewOnly ? 'inline-flex' : 'none';
     document.querySelectorAll('.slot').forEach((s) => s.classList.toggle('view-only', viewOnly));
   }
+  $('btnGoLogin').addEventListener('click', () => { $('authOverlay').style.display = 'flex'; });
   
   function initApp() {
     courses = normalizeCourses(readJSON(LS.courses, {}));
