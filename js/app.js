@@ -680,7 +680,7 @@
   window.addEventListener('app:offline-mode', () => { viewOnly = false; initApp(); });
   window.addEventListener('app:signed-in', async (e) => {
     viewOnly = false;
-    await Data(e.detail.uid);
+    await loadCloudData(e.detail.uid);
     initApp();
     const dot = $('saveDot'), text = $('saveText');
     if (dot) { dot.className = 'save-dot saved'; text.textContent = 'Connecté'; }
