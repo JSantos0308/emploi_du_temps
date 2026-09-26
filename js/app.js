@@ -391,32 +391,48 @@
     }
   });
 
+  // Écouteur de saisie simplifié (plus besoin de modifier un champ intitulé manuellement)
+  $('courseSearch').addEventListener('input', (e) => {
+    // La recherche se fait directement via le datalist du catalogue
+  });
+
   function openModal(week, day, hour) {
     if (viewOnly) return;
     const item = findItemAt(week, day, hour);
     modalCtx = { editing: item, week, day, hour };
     $('modalError').textContent = '';
     if (item) {
-      $('courseSearch').value = item.title; $('courseSubTitle').value = item.subtitle;
-      $('courseType').value = item.type; $('courseLocation').value = item.loc; $('courseDuration').value = String(item.duration);
+      $('courseSearch').value = item.title; 
+      $('courseType').value = item.type; 
+      $('courseLocation').value = item.loc; 
+      $('courseDuration').value = String(item.duration);
       $('btnModalCopy').style.display = 'inline-block'; $('btnModalPaste').style.display = 'none'; $('btnDeleteCourse').style.display = 'inline-block';
     } else {
-      $('courseSearch').value = ''; $('courseSubTitle').value = ''; $('courseType').value = 'theorie';
-      $('courseLocation').value = ''; $('courseDuration').value = String(Math.min(2, H - hour));
+      $('courseSearch').value = ''; 
+      $('courseType').value = 'theorie';
+      $('courseLocation').value = ''; 
+      $('courseDuration').value = String(Math.min(2, H - hour));
       $('btnModalCopy').style.display = 'none'; $('btnModalPaste').style.display = copiedBuffer ? 'inline-block' : 'none';
       $('btnDeleteCourse').style.display = 'none';
     }
     updateLocationsDatalist(); fillCoursesDatalist();
     $('courseModal').style.display = 'flex'; $('courseSearch').focus();
   }
+
   function closeModal() { $('courseModal').style.display = 'none'; }
 
   function saveCourse() {
     const title = $('courseSearch').value.trim();
     if (!title) { $('modalError').textContent = "Indiquez un nom de cours (ou utilisez « Supprimer »)."; return; }
+    
     const week = modalCtx.week, day = modalCtx.day, hour = modalCtx.hour, editing = modalCtx.editing;
-    const type = $('courseType').value, subtitle = $('courseSubTitle').value.trim();
-    const loc = $('courseLocation').value.trim(), duration = parseInt($('courseDuration').value, 10);
+    const type = $('courseType').value;
+    const loc = $('courseLocation').value.trim();
+    const duration = parseInt($('courseDuration').value, 10);
+
+    // Récupération automatique de l'intitulé (subtitle) depuis le catalogue si le nom correspond
+    const catalogMatch = catalog.find((c) => c.name.toLowerCase() === title.toLowerCase());
+    const subtitle = catalogMatch ? catalogMatch.subtitle : '';
 
     const err = placementError(week, day, hour, duration, editing ? editing.id : null);
     if (err) { $('modalError').textContent = err; return; }
