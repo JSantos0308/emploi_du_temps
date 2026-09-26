@@ -1,105 +1,96 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail
+import { 
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
+  signOut, onAuthStateChanged, sendPasswordResetEmail 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import {
-  getFirestore, doc, setDoc, getDoc, deleteDoc, enableIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Remplace par ta configuration Firebase si tu souhaites activer le cloud
 const firebaseConfig = {
-  apiKey: "AIzaSyADndGQPP7OjP0pK1wqfeZrdZQ84_iLrys",
-  authDomain: "emploi-du-temps-2ffd6.firebaseapp.com",
-  projectId: "emploi-du-temps-2ffd6",
-  storageBucket: "emploi-du-temps-2ffd6.firebasestorage.app",
-  messagingSenderId: "897752698709",
-  appId: "1:897752698709:web:a1ac2f8be097f3ad6a69dc"
+  apiKey: "AIzaSy_ MOCK_KEY",
+  authDomain: "mock-project.firebaseapp.com",
+  projectId: "mock-project",
+  storageBucket: "mock-project.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "1:0000:web:0000"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-try { enableIndexedDbPersistence(db); } catch (e) { }
 
 window.__auth = auth;
-window.__fs = { doc, setDoc, getDoc, deleteDoc, db };
+window.__fs = { db, doc, getDoc, setDoc };
 
-let isSignUpMode = false;
+const $ = (id) => document.getElementById(id);
+let isSignUp = false;
 
-function setAuthMsg(text, kind) {
-  const el = document.getElementById('authMsg');
-  el.textContent = text || '';
-  el.className = 'auth-msg' + (kind ? ' ' + kind : '');
-}
-
-function translateAuthError(code) {
-  const map = {
-    'auth/invalid-email': "Adresse e-mail invalide.",
-    'auth/user-not-found': "Aucun compte avec cette adresse.",
-    'auth/wrong-password': "Mot de passe incorrect.",
-    'auth/invalid-credential': "Identifiants incorrects.",
-    'auth/email-already-in-use': "Un compte existe déjà avec cette adresse.",
-    'auth/weak-password': "Mot de passe trop court (6 caractères minimum).",
-    'auth/too-many-requests': "Trop de tentatives, réessayez plus tard.",
-    'auth/network-request-failed': "Pas de connexion internet."
-  };
-  return map[code] || "Une erreur est survenue.";
-}
-
-document.getElementById('switchText').addEventListener('click', () => {
-  isSignUpMode = !isSignUpMode;
-  document.getElementById('authTitle').textContent = isSignUpMode ? "Créer un compte" : "Connexion";
-  document.getElementById('btnAuth').textContent = isSignUpMode ? "S'inscrire" : "Se connecter";
-  document.getElementById('switchText').textContent = isSignUpMode ? "Déjà un compte ? Se connecter" : "Pas encore de compte ? S'inscrire";
-  setAuthMsg('');
+$('switchText').addEventListener('click', () => {
+  isSignUp = !isSignUp;
+  $('authTitle').textContent = isSignUp ? "Inscription" : "Connexion";
+  $('btnAuth').textContent = isSignUp ? "S'inscrire" : "Se connecter";
+  $('switchText').textContent = isSignUp ? "Déjà un compte ? Se connecter" : "Pas encore de compte ? S'inscrire";
 });
 
-document.getElementById('btnAuth').addEventListener('click', async () => {
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  setAuthMsg('');
-  if (!email || !password) { setAuthMsg("Indiquez une adresse e-mail et un mot de passe.", 'error'); return; }
+$('btnAuth').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  const msg = $('authMsg');
+  msg.textContent = "";
+  msg.className = "auth-msg";
+
+  if (!email || !password) {
+    msg.textContent = "Veuillez remplir tous les champs.";
+    msg.className = "auth-msg error";
+    return;
+  }
+
   try {
-    if (isSignUpMode) {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      sendEmailVerification(cred.user).catch(() => {});
-      setAuthMsg("Compte créé. Un e-mail de vérification vous a été envoyé.", 'ok');
+    if (isSignUp) {
+      await createUserWithEmailAndPassword(auth, email, password);
+      msg.textContent = "Compte créé avec succès !";
+      msg.className = "auth-msg ok";
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }
-  } catch (e) {
-    setAuthMsg(translateAuthError(e.code), 'error');
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.className = "auth-msg error";
   }
 });
 
-document.getElementById('btnForgot').addEventListener('click', async () => {
-  const email = document.getElementById('email').value.trim();
-  if (!email) { setAuthMsg("Indiquez votre adresse e-mail ci-dessus, puis cliquez à nouveau.", 'error'); return; }
+$('btnForgot').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  const msg = $('authMsg');
+  if (!email) {
+    msg.textContent = "Entrez votre e-mail pour réinitialiser le mot de passe.";
+    msg.className = "auth-msg error";
+    return;
+  }
   try {
     await sendPasswordResetEmail(auth, email);
-    setAuthMsg("E-mail de réinitialisation envoyé.", 'ok');
-  } catch (e) {
-    setAuthMsg(translateAuthError(e.code), 'error');
+    msg.textContent = "E-mail de réinitialisation envoyé.";
+    msg.className = "auth-msg ok";
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.className = "auth-msg error";
   }
 });
 
-document.getElementById('btnSkip').addEventListener('click', () => {
-  document.getElementById('authOverlay').style.display = 'none';
+$('btnSkip').addEventListener('click', () => {
+  $('authOverlay').style.display = 'none';
   window.dispatchEvent(new CustomEvent('app:offline-mode'));
 });
 
-document.getElementById('btnLogout').addEventListener('click', () => {
+$('btnLogout').addEventListener('click', async () => {
   window.dispatchEvent(new CustomEvent('app:before-logout'));
-  signOut(auth);
+  try { await signOut(auth); } catch(e) {}
+  $('authOverlay').style.display = 'flex';
 });
 
 onAuthStateChanged(auth, (user) => {
-  const overlay = document.getElementById('authOverlay');
-  if (user && !user.isAnonymous) {
-    overlay.style.display = 'none';
-    window.dispatchEvent(new CustomEvent('app:signed-in', { detail: { uid: user.uid, email: user.email } }));
-  } else {
-    window.dispatchEvent(new CustomEvent('app:signed-out'));
-    if (!window.__offlineChoice) overlay.style.display = 'flex';
+  if (user) {
+    $('authOverlay').style.display = 'none';
+    window.dispatchEvent(new CustomEvent('app:signed-in', { detail: { uid: user.uid } }));
   }
 });
