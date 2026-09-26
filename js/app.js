@@ -278,26 +278,24 @@
 
   function cardMatchesFilter(item) {
     if (filter.course && item.title !== filter.course) return false;
-    if (filter.type && item.type !== filter.type) return false;
+    if (filter.type && getBaseType(item.type) !== filter.type) return false;
     return true;
   }
 
   function buildCard(week, item) {
     const card = document.createElement('div');
-    card.className = 'course-card ' + item.type + (cardMatchesFilter(item) ? '' : ' dimmed');
+    const baseType = getBaseType(item.type);
+    card.className = 'course-card ' + baseType + (cardMatchesFilter(item) ? '' : ' dimmed');
     card.style.height = 'calc(var(--row-height) * ' + item.duration + ' - 2px)';
     card.draggable = !viewOnly;
 
     const title = document.createElement('div'); 
     title.className = 'header-title';
     
-    // Format : 'Nom' - 'type'
-    const typeLabels = { theorie: 'Théorie', s: 's', labo: 'Labo', etude: 'Étude' };
-    const typeStr = typeLabels[item.type] || item.type;
-    title.textContent = item.title + (typeStr ? ' - ' + typeStr : '');
+    // Affiche le nom + le type personnalisé (ex: "ELECH3001 - Exercices 1")
+    title.textContent = item.title + (item.type ? ' - ' + item.type : '');
     card.appendChild(title);
 
-    // Ligne suivante : l'intitulé complet (subtitle)
     if (item.subtitle) { 
       const s = document.createElement('div'); 
       s.className = 'subtitle'; 
@@ -411,13 +409,13 @@
     $('modalError').textContent = '';
     if (item) {
       $('courseSearch').value = item.title; 
-      $('courseType').value = item.type; 
+      $('courseType').value = item.type || 'Théorie'; 
       $('courseLocation').value = item.loc; 
       $('courseDuration').value = String(item.duration);
       $('btnModalCopy').style.display = 'inline-block'; $('btnModalPaste').style.display = 'none'; $('btnDeleteCourse').style.display = 'inline-block';
     } else {
       $('courseSearch').value = ''; 
-      $('courseType').value = 'theorie';
+      $('courseType').value = 'Théorie';
       $('courseLocation').value = ''; 
       $('courseDuration').value = String(Math.min(2, H - hour));
       $('btnModalCopy').style.display = 'none'; $('btnModalPaste').style.display = copiedBuffer ? 'inline-block' : 'none';
@@ -434,11 +432,10 @@
     if (!title) { $('modalError').textContent = "Indiquez un nom de cours (ou utilisez « Supprimer »)."; return; }
     
     const week = modalCtx.week, day = modalCtx.day, hour = modalCtx.hour, editing = modalCtx.editing;
-    const type = $('courseType').value;
+    const type = $('courseType').value.trim() || 'Théorie';
     const loc = $('courseLocation').value.trim();
     const duration = parseInt($('courseDuration').value, 10);
 
-    // Récupération automatique de l'intitulé (subtitle) depuis le catalogue si le nom correspond
     const catalogMatch = catalog.find((c) => c.name.toLowerCase() === title.toLowerCase());
     const subtitle = catalogMatch ? catalogMatch.subtitle : '';
 
@@ -455,6 +452,7 @@
     saveLocation(loc);
     saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); closeModal();
   }
+  
   function deleteCourse() {
     const week = modalCtx.week, editing = modalCtx.editing;
     if (editing) { removeItem(week, editing.id); saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions(); }
