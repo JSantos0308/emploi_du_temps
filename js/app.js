@@ -745,7 +745,7 @@
   window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); });
   
   initApp();
-
+  goToWeek(getCurrentWeekKey());
   // Partage / Exporter
   $('btnShare').addEventListener('click', () => { $('shareModal').style.display = 'flex'; });
   $('btnShareClose').addEventListener('click', () => { $('shareModal').style.display = 'none'; });
