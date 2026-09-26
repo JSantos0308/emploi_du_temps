@@ -176,6 +176,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .course-card.dimmed{ opacity:.12; }
 .course-card.theorie{ background:var(--bg-theorie); } .course-card.exercices{ background:var(--bg-exercices); }
 .course-card.labo{ background:var(--bg-labo); } .course-card.etude{ background:var(--bg-etude); }
+.course-card.default{ background:var(--bg-default); } /* <-- Ajout de la règle pour le gris clair */
 .course-card .header-title{ font-weight:bold; font-size:9.5px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-card .subtitle{ font-size:8.5px; line-height:1.1; color:#222; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-card .location{ font-size:8px; font-weight:bold; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
