@@ -1,6 +1,6 @@
 :root {
   --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
-  --bg-default: #e9ecef; /* <-- Ajout du gris clair par défaut */
+  --bg-default:#e9ecef; /* Gris clair par défaut */
   --border-color:#cccccc; --row-height:56px;
   --today-bg:#e6f4ea; --today-header-bg:#0f5132; --today-header-color:#ffffff;
 }
@@ -97,25 +97,6 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   width: 0;
   height: 0;
 }
-/* Mini-barre d'outils pour le catalogue */
-.catalog-toolbar {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
-  background: rgba(30,30,30,.95);
-  padding: 6px;
-  border-radius: 6px;
-  display: none;
-  gap: 6px;
-  z-index: 120;
-  box-shadow: 0 4px 15px rgba(0,0,0,.3);
-  backdrop-filter: blur(5px);
-  white-space: nowrap;
-}
-.catalog-toolbar.active {
-  display: flex;
-}
 
 .btn-action{
   padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:none; cursor:pointer; color:#fff;
@@ -134,6 +115,55 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .save-dot.offline{ background:#6c757d; }
 
 .viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; }
+
+/* Panneau déroulant du Catalogue par onglets */
+.catalog-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  width: 280px;
+  padding: 10px;
+  display: none;
+  z-index: 120;
+  font-size: 11px;
+}
+.catalog-dropdown-panel.open {
+  display: block;
+}
+.catalog-tabs {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 8px;
+}
+.catalog-tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 6px;
+  font-weight: bold;
+  font-size: 11px;
+  cursor: pointer;
+  color: #555;
+  text-align: center;
+}
+.catalog-tab-btn.active {
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+  margin-bottom: -2px;
+}
+.catalog-tab-content textarea {
+  width: 100%;
+  padding: 5px;
+  font-size: 11px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  resize: vertical;
+}
 
 /* PANNEAU FILTRE */
 .filter-panel{
@@ -193,9 +223,11 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .course-card .location{ margin-top:auto; padding-top:4px; }
 .course-card:active{ cursor:grabbing; opacity:.7; }
 .course-card.dimmed{ opacity:.12; }
-.course-card.theorie{ background:var(--bg-theorie); } .course-card.exercices{ background:var(--bg-exercices); }
-.course-card.labo{ background:var(--bg-labo); } .course-card.etude{ background:var(--bg-etude); }
-.course-card.default{ background:var(--bg-default); } /* <-- Ajout de la règle pour le gris clair */
+.course-card.theorie{ background:var(--bg-theorie); } 
+.course-card.exercices{ background:var(--bg-exercices); }
+.course-card.labo{ background:var(--bg-labo); } 
+.course-card.etude{ background:var(--bg-etude); }
+.course-card.default{ background:var(--bg-default); }
 .course-card .header-title{ font-weight:bold; font-size:9.5px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-card .subtitle{ font-size:8.5px; line-height:1.1; color:#222; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .course-card .location{ font-size:8px; font-weight:bold; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
