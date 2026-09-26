@@ -21,7 +21,7 @@
   </div>
 </div>
 
-<div class="controls-box">
+<div "controls-box">
   <div class="controls-group">
     <div class="nav-bar-custom">
       <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
@@ -47,7 +47,15 @@
     <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
   </div>
   <div class="controls-group" id="editGroup2">
-    <button id="btnConfigCourses" class="btn-action btn-config">⚙️ Cours</button>
+    <!-- Nouveau menu déroulant/barre pour le Catalogue -->
+    <div style="position: relative; display: inline-block;">
+      <button id="btnCatalogToggle" class="btn-action btn-config">📚 Catalogue</button>
+      <div id="catalogToolbar" class="catalog-toolbar">
+        <button id="btnConfigCourses" class="btn-action btn-config">📖 Cours</button>
+        <button id="btnConfigTypes" class="btn-action btn-config">🏷️ Types</button>
+      </div>
+    </div>
+    
     <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
     <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
     <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
