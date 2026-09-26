@@ -169,6 +169,9 @@
   }
   function findItem(week, id) { return (courses[week] || []).find((c) => c.id === id) || null; }
   function findItemAt(week, day, hour) { return (courses[week] || []).find((c) => c.day === day && c.hour === hour) || null; }
+  function isSlotCovered(week, day, hour) {
+    return (courses[week] || []).some((c) => c.day === day && hour >= c.hour && hour < c.hour + c.duration);
+  }
   function removeItem(week, id) { courses[week] = (courses[week] || []).filter((c) => c.id !== id); }
   function moveItem(fromWeek, id, toWeek, day, hour) {
     const item = findItem(fromWeek, id); if (!item) return;
@@ -244,13 +247,16 @@
         grid.appendChild(timeCell);
         for (let day = 0; day < 7; day++) {
           const slot = document.createElement('div'); slot.className = 'slot';
-          if (dayCells[day]) {
-            slot.classList.add('today-col');
-          }
           slotMap[wk + '-' + day + '-' + h] = slot;
 
-          slot.addEventListener('mouseenter', () => { hovered = { week: wk, day, hour: h }; });
-          slot.addEventListener('mouseleave', () => { if (hovered && hovered.week===wk && hovered.day===day && hovered.hour===h) hovered = null; });
+          slot.addEventListener('mouseenter', () => {
+            hovered = { week: wk, day, hour: h };
+            if (!isSlotCovered(wk, day, h)) slot.classList.add('slot-hover');
+          });
+          slot.addEventListener('mouseleave', () => {
+            if (hovered && hovered.week===wk && hovered.day===day && hovered.hour===h) hovered = null;
+            slot.classList.remove('slot-hover');
+          });
           slot.addEventListener('click', (e) => {
             if (viewOnly || drawMode !== 'none') return;
             if (e.target.closest('.course-card')) return;
