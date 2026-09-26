@@ -683,7 +683,7 @@
   });
 
   // Liaison avec Firebase / Offline
-  window.addEventListener('app:offline-mode', () => { viewOnly = false; initApp(); });
+  window.addEventListener('app:offline-mode', () => { viewOnly = true; initApp(); });
   window.addEventListener('app:signed-in', async (e) => {
     viewOnly = false;
     await loadCloudData(e.detail.uid);
