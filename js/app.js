@@ -188,11 +188,14 @@
   }
 
   function getBaseType(typeStr) {
-    const lower = (typeStr || '').toLowerCase();
-    if (lower.includes('exercice') || lower.includes('tp')) return 'exercices';
+    const lower = (typeStr || '').toLowerCase().trim();
+    
+    if (lower.includes('theorie') || lower.includes('théorie') || lower.includes('theo')) return 'theorie';
+    if (lower.includes('exercice') || lower.includes('ex')) return 'exercices';
     if (lower.includes('labo') || lower.includes('pratique')) return 'labo';
-    if (lower.includes('etude') || lower.includes('perso')) return 'etude';
-    return 'theorie';
+    if (lower.includes('etude') || lower.includes('étude') || lower.includes('perso')) return 'etude';
+    
+    return ''; // Par défaut, retourne vide si aucun type reconnu
   }
 
   function updateNavBarDisplay(wk) {
