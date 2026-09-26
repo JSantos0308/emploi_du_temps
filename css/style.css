@@ -145,7 +145,7 @@ body{ display:flex; flex-direction:column; }
 .now-line{ position:absolute; height:2px; background:#e8590c; z-index:8; pointer-events:none; border-radius:1px; }
 .now-line::before{ content:""; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#e8590c; }
 
-.week-block{ margin-bottom:20px; }
+.week-block{ margin-bottom:20px; border:1px solid var(--border-color); border-top:none; }
 .week-divider{ height:20px; }
 
 .header-row{
