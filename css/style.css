@@ -1,5 +1,6 @@
 :root {
   --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
+  --bg-default: #e9ecef; /* <-- Ajout du gris clair par défaut */
   --border-color:#cccccc; --row-height:56px;
   --today-bg:#e6f4ea; --today-header-bg:#0f5132; --today-header-color:#ffffff;
 }
