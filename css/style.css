@@ -99,12 +99,12 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 
 .btn-action{
-  padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:none; cursor:pointer; color:#fff;
-  display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap;
+  padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:1px solid currentColor; cursor:pointer;
+  background:transparent; display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap;
 }
-.btn-draw{ background:#6f42c1; } .btn-copy{ background:#007bff; } .btn-clear{ background:#dc3545; }
-.btn-logout{ background:#6c757d; } .btn-config{ background:#343a40; } .btn-history{ background:#495057; }
-.btn-filter{ background:#e8590c; } .btn-share{ background:#0ca678; }
+.btn-draw{ color:#6f42c1; } .btn-copy{ color:#007bff; } .btn-clear{ color:#dc3545; }
+.btn-logout{ color:#6c757d; } .btn-config{ color:#343a40; } .btn-history{ color:#495057; }
+.btn-filter{ color:#e8590c; } .btn-share{ color:#0ca678; }
 .btn-active{ outline:2px solid #333; box-shadow:0 0 4px rgba(0,0,0,.5); }
 .btn-action:disabled{ opacity:.4; cursor:not-allowed; }
 .save-status{ font-size:10.5px; color:#666; white-space:nowrap; display:flex; align-items:center; gap:4px; }
