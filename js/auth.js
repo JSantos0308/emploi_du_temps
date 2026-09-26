@@ -92,6 +92,7 @@ $('btnLogout').addEventListener('click', async () => {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     $('authOverlay').style.display = 'none';
+    if ($('accountEmailDisplay')) $('accountEmailDisplay').textContent = user.email || '';
     window.dispatchEvent(new CustomEvent('app:signed-in', { detail: { uid: user.uid } }));
   }
 });
