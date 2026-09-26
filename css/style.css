@@ -162,6 +162,7 @@ body{ display:flex; flex-direction:column; }
 .slot.drag-over{ background:#e2e8f0; border:2px dashed #007bff; }
 .slot.slot-hover{ background:#f9f9f9; }
 .slot.slot-covered{ border-bottom:none; }
+.slot.slot-no-inner-border{ border-bottom:none; }
 .slot.view-only{ cursor:default; }
 
 .course-card{
