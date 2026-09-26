@@ -5,27 +5,8 @@
     startDateS1: new Date(2026, 8, 14),
     weeks: 14,
     hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"],
-    defaultCatalog: [
-      { name:"ELECH3001 - Théorie", type:"theorie", subtitle:"Électricité appliquée" },
-      { name:"ELECH3001 - Exercices 1", type:"exercices", subtitle:"Électricité appliquée" },
-      { name:"ELECH3001 - Exercices 2", type:"exercices", subtitle:"Électricité appliquée" },
-      { name:"ELECH3001 - Laboratoire", type:"labo", subtitle:"Électricité appliquée" },
-      { name:"MATHH2000 - Théorie", type:"theorie", subtitle:"Analyse II" },
-      { name:"MATHH2000 - Exercices", type:"exercices", subtitle:"Analyse II" },
-      { name:"MATHH2002 - Théorie", type:"theorie", subtitle:"Calcul des probabilités et statistiques" },
-      { name:"MATHH2002 - Exercices", type:"exercices", subtitle:"Calcul des probabilités et statistiques" },
-      { name:"MATHH3001 - Théorie", type:"theorie", subtitle:"Signaux et systèmes" },
-      { name:"MATHH3001 - Exercices", type:"exercices", subtitle:"Signaux et systèmes" },
-      { name:"MECAH200 - Théorie", type:"theorie", subtitle:"Mécanique rationnelle II" },
-      { name:"MECAH200 - Exercices", type:"exercices", subtitle:"Mécanique rationnelle II" },
-      { name:"MECAH200 - Laboratoire", type:"labo", subtitle:"Mécanique rationnelle II" },
-      { name:"MECAH3001 - Théorie", type:"theorie", subtitle:"Fluid mechanics and transfer processes" },
-      { name:"MECAH3001 - Exercices", type:"exercices", subtitle:"Fluid mechanics and transfer processes" },
-      { name:"MECAH3001 - Anglais", type:"labo", subtitle:"Fluid mechanics and transfer processes" },
-      { name:"MECAH301 - Théorie", type:"theorie", subtitle:"Systèmes énergétiques" },
-      { name:"MECAH301 - Exercices", type:"exercices", subtitle:"Systèmes énergétiques" }
-    ],
-    defaultLocations: ["Bibliothèque","Maison","Casa","Auditoire FERRER","Auditoire GUILLISSEN","Auditoire Aretha FRANKLIN"]
+    defaultCatalog: [],
+    defaultLocations: ["Bibliothèque","Maison"]
   };
 
   const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
@@ -103,13 +84,12 @@
     }).map((s) => ({ w: s.w, kind: s.kind, color: /^#[0-9a-fA-F]{3,8}$/.test(s.color) ? s.color : '#dc3545', pts: s.pts }));
   }
  function normalizeCatalog(raw) {
-    if (!Array.isArray(raw)) return CONFIG.defaultCatalog.slice();
+    if (!Array.isArray(raw)) return [];
     const out = raw.filter((c) => c && typeof c.name === 'string' && c.name.trim()).map((c) => ({
       name: c.name.trim().slice(0, 120),
-      type: TYPES.includes(c.type) ? c.type : 'theorie',
       subtitle: String(c.subtitle || '').slice(0, 120)
     }));
-    return out.length ? out : CONFIG.defaultCatalog.slice();
+    return out; // Retourne le tableau (qui sera vide s'il n'y a rien)
   }
   function normalizeLocations(raw) {
     if (!Array.isArray(raw)) return CONFIG.defaultLocations.slice();
