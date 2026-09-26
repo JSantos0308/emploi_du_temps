@@ -741,7 +741,6 @@
 
   window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); });
   
-  // Lancement initial
   initApp();
 
   // Partage / Exporter
