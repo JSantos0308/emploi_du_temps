@@ -378,9 +378,12 @@
   }
 
   $('courseSearch').addEventListener('input', (e) => {
-    const val = e.target.value;
+    const val = e.target.value.trim();
     const exact = catalog.find((c) => c.name === val);
-    if (exact) { $('courseType').value = exact.type; $('courseSubTitle').value = exact.subtitle; return; }
+    if (exact) { 
+      if (exact.subtitle && !$('courseSubTitle').value) $('courseSubTitle').value = exact.subtitle; 
+      return; 
+    }
     const code = val.split(' - ')[0].trim();
     if (code && !$('courseSubTitle').value) {
       const byCode = catalog.find((c) => c.name.split(' - ')[0].trim() === code);
@@ -723,14 +726,9 @@
     $('configError').textContent = '';
     if (type === 'courses') {
       $('configModalTitle').textContent = "Catalogue de cours";
-      $('configModalDesc').textContent = "Format : Nom | type | Intitulé complet (type et intitulé facultatifs). Type = theorie, exercices, labo ou etude.";
+      $('configModalDesc').textContent = "Format : Nom | Intitulé complet (l'intitulé est facultatif).";
       $('configTextarea').value = catalog.map((c) => {
-        let line = c.name;
-        if (c.type || c.subtitle) {
-          line += ' | ' + (c.type || 'theorie');
-          if (c.subtitle) line += ' | ' + c.subtitle;
-        }
-        return line;
+        return c.subtitle ? c.name + ' | ' + c.subtitle : c.name;
       }).join('\n');
     } else {
       $('configModalTitle').textContent = "Liste des locaux";
@@ -748,24 +746,8 @@
       const parsed = lines.map((line) => {
         const parts = line.split('|').map((p) => p.trim());
         const name = parts[0] || '';
-        let type = 'theorie';
-        let subtitle = '';
-
-        if (parts.length === 2) {
-          if (TYPES.includes(parts[1].toLowerCase())) {
-            type = parts[1].toLowerCase();
-          } else {
-            subtitle = parts[1];
-          }
-        } else if (parts.length >= 3) {
-          if (TYPES.includes(parts[1].toLowerCase())) {
-            type = parts[1].toLowerCase();
-            subtitle = parts[2] || '';
-          } else {
-            subtitle = parts.slice(1).join(' | ');
-          }
-        }
-        return { name, type, subtitle };
+        const subtitle = parts.length > 1 ? parts.slice(1).join(' | ') : '';
+        return { name, subtitle };
       }).filter((c) => c.name);
 
       catalog = normalizeCatalog(parsed);
