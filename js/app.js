@@ -680,7 +680,7 @@
   window.addEventListener('app:offline-mode', () => { viewOnly = false; initApp(); });
   window.addEventListener('app:signed-in', async (e) => {
     viewOnly = false;
-    await loadCloudData(e.detail.uid);
+    await Data(e.detail.uid);
     initApp();
     const dot = $('saveDot'), text = $('saveText');
     if (dot) { dot.className = 'save-dot saved'; text.textContent = 'Connecté'; }
@@ -721,7 +721,7 @@
         typesListArray = normalizeTypes(data.types);
         saveLocalAll();
       }
-    } catch(e) {}
+    } catch(e) { console.error('Erreur chargement cloud:', e); }
   }
 
   function initApp() {
