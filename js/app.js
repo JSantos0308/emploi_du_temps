@@ -102,7 +102,7 @@
       return s.pts.every((p) => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]));
     }).map((s) => ({ w: s.w, kind: s.kind, color: /^#[0-9a-fA-F]{3,8}$/.test(s.color) ? s.color : '#dc3545', pts: s.pts }));
   }
-  function normalizeCatalog(raw) {
+ function normalizeCatalog(raw) {
     if (!Array.isArray(raw)) return CONFIG.defaultCatalog.slice();
     const out = raw.filter((c) => c && typeof c.name === 'string' && c.name.trim()).map((c) => ({
       name: c.name.trim().slice(0, 120),
@@ -300,9 +300,29 @@
     card.style.height = 'calc(var(--row-height) * ' + item.duration + ' - 2px)';
     card.draggable = !viewOnly;
 
-    const title = document.createElement('div'); title.className = 'header-title'; title.textContent = item.title; card.appendChild(title);
-    if (item.subtitle) { const s = document.createElement('div'); s.className = 'subtitle'; s.textContent = item.subtitle; card.appendChild(s); }
-    if (item.loc) { const l = document.createElement('div'); l.className = 'location'; l.textContent = item.loc; card.appendChild(l); }
+    const title = document.createElement('div'); 
+    title.className = 'header-title';
+    
+    // Format : 'Nom' - 'type'
+    const typeLabels = { theorie: 'Théorie', exercices: 'Exercices', labo: 'Labo', etude: 'Étude' };
+    const typeStr = typeLabels[item.type] || item.type;
+    title.textContent = item.title + (typeStr ? ' - ' + typeStr : '');
+    card.appendChild(title);
+
+    // Ligne suivante : l'intitulé complet (subtitle)
+    if (item.subtitle) { 
+      const s = document.createElement('div'); 
+      s.className = 'subtitle'; 
+      s.textContent = item.subtitle; 
+      card.appendChild(s); 
+    }
+    
+    if (item.loc) { 
+      const l = document.createElement('div'); 
+      l.className = 'location'; 
+      l.textContent = item.loc; 
+      card.appendChild(l); 
+    }
 
     card.addEventListener('click', (e) => { e.stopPropagation(); if (!viewOnly && drawMode === 'none') openModal(week, item.day, item.hour); });
     card.addEventListener('dragstart', (e) => {
@@ -723,8 +743,15 @@
     $('configError').textContent = '';
     if (type === 'courses') {
       $('configModalTitle').textContent = "Catalogue de cours";
-      $('configModalDesc').textContent = "Un cours par ligne, au format : Nom | type | Intitulé complet. Type = theorie, exercices, labo ou etude.";
-      $('configTextarea').value = catalog.map((c) => c.name + ' | ' + c.type + ' | ' + c.subtitle).join('\n');
+      $('configModalDesc').textContent = "Format : Nom | type | Intitulé complet (type et intitulé facultatifs). Type = theorie, exercices, labo ou etude.";
+      $('configTextarea').value = catalog.map((c) => {
+        let line = c.name;
+        if (c.type || c.subtitle) {
+          line += ' | ' + (c.type || 'theorie');
+          if (c.subtitle) line += ' | ' + c.subtitle;
+        }
+        return line;
+      }).join('\n');
     } else {
       $('configModalTitle').textContent = "Liste des locaux";
       $('configModalDesc').textContent = "Un local par ligne.";
@@ -732,14 +759,35 @@
     }
     $('configModal').style.display = 'flex';
   } 
+
   function closeConfigModal() { $('configModal').style.display = 'none'; }
+
   function saveConfigModal() {
     const lines = $('configTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
     if (currentConfigType === 'courses') {
       const parsed = lines.map((line) => {
         const parts = line.split('|').map((p) => p.trim());
-        return { name: parts[0] || '', type: parts[1] || 'theorie', subtitle: parts[2] || '' };  
+        const name = parts[0] || '';
+        let type = 'theorie';
+        let subtitle = '';
+
+        if (parts.length === 2) {
+          if (TYPES.includes(parts[1].toLowerCase())) {
+            type = parts[1].toLowerCase();
+          } else {
+            subtitle = parts[1];
+          }
+        } else if (parts.length >= 3) {
+          if (TYPES.includes(parts[1].toLowerCase())) {
+            type = parts[1].toLowerCase();
+            subtitle = parts[2] || '';
+          } else {
+            subtitle = parts.slice(1).join(' | ');
+          }
+        }
+        return { name, type, subtitle };
       }).filter((c) => c.name);
+
       catalog = normalizeCatalog(parsed);
       updateCoursesDatalist(); toast("Catalogue de cours mis à jour.");
     } else {
