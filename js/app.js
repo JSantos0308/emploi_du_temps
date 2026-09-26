@@ -730,6 +730,14 @@
     } catch(e) { console.error('Erreur chargement cloud:', e); }
   }
 
+  function applyViewOnlyUI() {
+    const badge = $('viewOnlyBadge'), g1 = $('editGroup1'), g2 = $('editGroup2');
+    if (badge) badge.style.display = viewOnly ? 'inline-block' : 'none';
+    if (g1) g1.style.display = viewOnly ? 'none' : 'flex';
+    if (g2) g2.style.display = viewOnly ? 'none' : 'flex';
+    document.querySelectorAll('.slot').forEach((s) => s.classList.toggle('view-only', viewOnly));
+  }
+  
   function initApp() {
     courses = normalizeCourses(readJSON(LS.courses, {}));
     strokes = normalizeStrokes(readJSON(LS.strokes, []));
@@ -746,6 +754,7 @@
     updateTypesDatalist();
     pushHistory();
     resizeCanvas();
+    applyViewOnlyUI();
   }
 
   window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); });
