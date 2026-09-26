@@ -791,6 +791,49 @@
     goToWeek(weekKey(n));
   });
 
+    function dateToWeekNum(dateVal) {
+    const selectedDate = new Date(dateVal);
+    const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
+    const diffTime = selectedDate - start;
+    const diffDays = Math.floor(diffTime / 86400000);
+    if (diffDays < 0) return 1;
+    let n = Math.floor(diffDays / 7) + 1;
+    return Math.min(Math.max(n, 1), CONFIG.weeks);
+  }
+
+  function applyDateRangeFilter() {
+    const startInput = $('startDatePicker').value;
+    const endInput = $('endDatePicker').value;
+
+    let startW = 1;
+    let endW = CONFIG.weeks;
+
+    if (startInput) startW = dateToWeekNum(startInput);
+    if (endInput) endW = dateToWeekNum(endInput);
+
+    if (startW > endW) {
+      toast("La date de début doit être antérieure à la date de fin.");
+      return;
+    }
+
+    for (let w = 1; w <= CONFIG.weeks; w++) {
+      blocks[w].style.display = (w >= startW && w <= endW) ? '' : 'none';
+    }
+    updateRangeDisplay(weekKey(startW), weekKey(endW));
+    resizeCanvas();
+    toast("Affichage filtré de la semaine " + startW + " à la semaine " + endW);
+  }
+
+  $('btnStartDate').addEventListener('click', () => {
+    $('startDatePicker').showPicker?.() || $('startDatePicker').click();
+  });
+  $('startDatePicker').addEventListener('change', applyDateRangeFilter);
+
+  $('btnEndDate').addEventListener('click', () => {
+    $('endDatePicker').showPicker?.() || $('endDatePicker').click();
+  });
+  $('endDatePicker').addEventListener('change', applyDateRangeFilter);
+
   function getCurrentWeekKey() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
