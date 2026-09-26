@@ -307,16 +307,16 @@
 
   function renderCards() {
     document.querySelectorAll('.course-card').forEach((c) => c.remove());
-    // Réinitialise toutes les cases : par défaut, elles réagissent normalement à la souris.
-    Object.values(slotMap).forEach((s) => { s.style.pointerEvents = ''; s.classList.remove('slot-hover'); });
+    // Réinitialise toutes les cases : par défaut, elles réagissent normalement à la souris et gardent leur bordure.
+    Object.values(slotMap).forEach((s) => { s.style.pointerEvents = ''; s.classList.remove('slot-hover', 'slot-covered'); });
     Object.keys(courses).forEach((wk) => courses[wk].forEach((item) => {
       const slot = slotMap[wk + '-' + item.day + '-' + item.hour];
       if (slot) slot.appendChild(buildCard(wk, item));
-      // Les cases "sous" un cours de plusieurs heures ne doivent plus intercepter la souris :
-      // le survol/clic doit atteindre la carte du cours, pas la case vide en dessous.
+      // Les cases "sous" un cours de plusieurs heures ne doivent plus intercepter la souris,
+      // ni afficher leur ligne de séparation qui traverserait visuellement la carte.
       for (let hh = item.hour + 1; hh < item.hour + item.duration; hh++) {
         const covered = slotMap[wk + '-' + item.day + '-' + hh];
-        if (covered) covered.style.pointerEvents = 'none';
+        if (covered) { covered.style.pointerEvents = 'none'; covered.classList.add('slot-covered'); }
       }
     }));
   }
