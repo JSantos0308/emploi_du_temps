@@ -104,7 +104,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 .btn-draw{ color:#6f42c1; } .btn-copy{ color:#007bff; } .btn-clear{ color:#dc3545; }
 .btn-logout{ color:#6c757d; } .btn-config{ color:#343a40; } 
-.btn-history{ color:#495057; font-size: 18px; font-weight: bold; }
+.btn-history{ color: #000000; font-size: 18px; font-weight: bold; }
 .btn-filter{ color:#e8590c; } .btn-share{ color:#0ca678; }
 .btn-active{ outline:2px solid #333; box-shadow:0 0 4px rgba(0,0,0,.5); }
 .btn-action:disabled{ opacity:.4; cursor:not-allowed; }
