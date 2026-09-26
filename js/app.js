@@ -4,7 +4,7 @@
   const CONFIG = {
     startDateS1: new Date(2026, 8, 14),
     weeks: 14,
-    hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00"],
+    hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"],
     defaultCatalog: [
       { name:"ELECH3001 - Théorie", type:"theorie", subtitle:"Électricité appliquée" },
       { name:"ELECH3001 - Exercices 1", type:"exercices", subtitle:"Électricité appliquée" },
@@ -251,6 +251,7 @@
       block.appendChild(headerRow);
 
       const grid = document.createElement('div'); grid.className = 'timetable-body';
+      grid.style.gridTemplateRows = 'repeat(' + H + ', var(--row-height))';
       CONFIG.hours.forEach((label, h) => {
         const timeCell = document.createElement('div'); timeCell.className = 'time-cell'; timeCell.textContent = label;
         grid.appendChild(timeCell);
@@ -595,7 +596,7 @@
     if (nowLineEl) { nowLineEl.remove(); nowLineEl = null; }
     const wk = getCurrentWeekKey(); const n = weekNum(wk);
     const now = new Date();
-    const startMinutes = 8*60, endMinutes = 20*60, curMinutes = now.getHours()*60+now.getMinutes();
+    const startMinutes = 8*60, endMinutes = startMinutes + H*60, curMinutes = now.getHours()*60+now.getMinutes();
     if (curMinutes < startMinutes || curMinutes >= endMinutes) return;
     const hourFloor = Math.floor((curMinutes - startMinutes)/60);
     const frac = ((curMinutes - startMinutes) % 60) / 60;
