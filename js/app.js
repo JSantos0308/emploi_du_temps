@@ -686,6 +686,41 @@
     goToWeek(todayWk);
   });
 
+  // --- Gestion de la barre d'outils Catalogue ---
+  let catalogToolbarActive = false;
+  function toggleCatalogToolbar() {
+    if (viewOnly) return;
+    catalogToolbarActive = !catalogToolbarActive;
+    $('catalogToolbar').classList.toggle('active', catalogToolbarActive);
+    $('btnCatalogToggle').classList.toggle('btn-active', catalogToolbarActive);
+  }
+
+  $('btnCatalogToggle').addEventListener('click', toggleCatalogToolbar);
+
+  // Fermer la barre du catalogue si on clique en dehors
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#btnCatalogToggle') && !e.target.closest('#catalogToolbar')) {
+      catalogToolbarActive = false;
+      $('catalogToolbar').classList.remove('active');
+      $('btnCatalogToggle').classList.remove('btn-active');
+    }
+  });
+
+  // Actions des sous-boutons du catalogue
+  $('btnConfigCourses').addEventListener('click', () => {
+    catalogToolbarActive = false;
+    $('catalogToolbar').classList.remove('active');
+    $('btnCatalogToggle').classList.remove('btn-active');
+    openConfigModal('courses');
+  });
+
+  $('btnConfigTypes').addEventListener('click', () => {
+    catalogToolbarActive = false;
+    $('catalogToolbar').classList.remove('active');
+    $('btnCatalogToggle').classList.remove('btn-active');
+    openConfigModal('types');
+  });
+  
   function dateToWeekNum(dateVal) {
     const selectedDate = new Date(dateVal);
     const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
