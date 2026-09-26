@@ -308,15 +308,19 @@
   function renderCards() {
     document.querySelectorAll('.course-card').forEach((c) => c.remove());
     // Réinitialise toutes les cases : par défaut, elles réagissent normalement à la souris et gardent leur bordure.
-    Object.values(slotMap).forEach((s) => { s.style.pointerEvents = ''; s.classList.remove('slot-hover', 'slot-covered'); });
+    Object.values(slotMap).forEach((s) => { s.style.pointerEvents = ''; s.classList.remove('slot-hover', 'slot-covered', 'slot-no-inner-border'); });
     Object.keys(courses).forEach((wk) => courses[wk].forEach((item) => {
       const slot = slotMap[wk + '-' + item.day + '-' + item.hour];
       if (slot) slot.appendChild(buildCard(wk, item));
-      // Les cases "sous" un cours de plusieurs heures ne doivent plus intercepter la souris,
-      // ni afficher leur ligne de séparation qui traverserait visuellement la carte.
-      for (let hh = item.hour + 1; hh < item.hour + item.duration; hh++) {
-        const covered = slotMap[wk + '-' + item.day + '-' + hh];
-        if (covered) { covered.style.pointerEvents = 'none'; covered.classList.add('slot-covered'); }
+      // Pour un cours de plusieurs heures : la case de départ ET les cases suivantes ne doivent
+      // afficher aucune ligne de séparation interne (sauf la toute dernière, qui marque la fin du bloc).
+      // Les cases après la première ne doivent plus intercepter la souris : le survol/clic doit
+      // atteindre la carte du cours, pas la case vide en dessous.
+      for (let hh = item.hour; hh < item.hour + item.duration; hh++) {
+        const s = slotMap[wk + '-' + item.day + '-' + hh];
+        if (!s) continue;
+        if (hh < item.hour + item.duration - 1) s.classList.add('slot-no-inner-border');
+        if (hh > item.hour) { s.style.pointerEvents = 'none'; s.classList.add('slot-covered'); }
       }
     }));
   }
