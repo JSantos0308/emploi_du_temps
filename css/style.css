@@ -97,6 +97,25 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   width: 0;
   height: 0;
 }
+/* Mini-barre d'outils pour le catalogue */
+.catalog-toolbar {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: rgba(30,30,30,.95);
+  padding: 6px;
+  border-radius: 6px;
+  display: none;
+  gap: 6px;
+  z-index: 120;
+  box-shadow: 0 4px 15px rgba(0,0,0,.3);
+  backdrop-filter: blur(5px);
+  white-space: nowrap;
+}
+.catalog-toolbar.active {
+  display: flex;
+}
 
 .btn-action{
   padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:none; cursor:pointer; color:#fff;
