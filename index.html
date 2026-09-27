@@ -52,7 +52,8 @@
 
   <!-- Groupe DROITE : Catalogue, Filtre, Partager, Statut, Compte -->
   <div class="controls-group">
-    <!-- Panneau déroulant du Catalogue par onglets -->
+
+    <!-- Catalogue -->
     <div style="position: relative; display: inline-block;">
       <button id="btnCatalogToggle" class="btn-action btn-config" data-tooltip="Gérer cours, modalités et locaux">📚 Catalogue</button>
       <div id="catalogDropdownPanel" class="catalog-dropdown-panel">
@@ -82,59 +83,67 @@
       </div>
     </div>
 
-    <button id="btnFilter" class="btn-action btn-filter" data-tooltip="Filtrer l'affichage">🔍 Filtre</button>
+    <!-- Filtre -->
     <div style="position: relative; display: inline-block;">
-  <button id="btnShare" class="btn-action btn-share" data-tooltip="Partager ou exporter">🔗 Partager</button>
-  <div id="shareModal" class="catalog-dropdown-panel" style="width:220px;">
-    <p class="modal-hint" style="margin-bottom:8px;">Choisissez une action :</p>
-    <div style="display:flex; flex-direction:column; gap:8px;">
-      <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien</button>
-      <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px; background:#20c997; color:#111;">📄 Télécharger en PDF</button>
-      <button id="btnShareJSON" class="btn-action btn-import" style="justify-content:center; height:32px; background:#17a2b8;">💾 Télécharger en JSON</button>
+      <button id="btnFilter" class="btn-action btn-filter" data-tooltip="Filtrer l'affichage">🔍 Filtre</button>
+      <div id="filterPanel" class="filter-panel">
+        <div class="filter-header">
+          <span>Filtre</span>
+          <button id="btnFilterClear" class="filter-clear">Effacer filtre</button>
+        </div>
+        <div class="filter-group">
+          <label>Cours</label>
+          <select id="filterSelectCourse">
+            <option value="">Tous les cours</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Type de réservation</label>
+          <select id="filterSelectType">
+            <option value="">Tous les types</option>
+            <option value="theorie">Théorie</option>
+            <option value="exercices">Exercices</option>
+            <option value="labo">Laboratoire</option>
+            <option value="etude">Étude</option>
+          </select>
+        </div>
+        <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
+      </div>
     </div>
-  </div>
-</div>
+
+    <!-- Partager -->
+    <div style="position: relative; display: inline-block;">
+      <button id="btnShare" class="btn-action btn-share" data-tooltip="Partager ou exporter">🔗 Partager</button>
+      <div id="shareModal" class="catalog-dropdown-panel" style="width:220px; left:auto; right:0;">
+        <p class="modal-hint" style="margin-bottom:8px;">Choisissez une action :</p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien</button>
+          <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px; background:#20c997; color:#111;">📄 Télécharger en PDF</button>
+          <button id="btnShareJSON" class="btn-action btn-import" style="justify-content:center; height:32px; background:#17a2b8;">💾 Télécharger en JSON</button>
+        </div>
+      </div>
+    </div>
+
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
-    <button id="btnAccount" class="btn-action btn-logout" data-tooltip="Mon compte">👤</button>
+
+    <!-- Mon compte -->
+    <div style="position: relative; display: inline-block;">
+      <button id="btnAccount" class="btn-action btn-logout" data-tooltip="Mon compte">👤</button>
+      <div id="accountPanel" class="filter-panel" style="width:220px; right:0; left:auto;">
+        <div class="filter-header">
+          <span>Mon compte</span>
+        </div>
+        <div class="filter-group">
+          <label>Connecté en tant que</label>
+          <div id="accountEmailDisplay" style="font-size:12px; color:#333; word-break:break-all;"></div>
+        </div>
+        <button id="btnLogout" class="btn-action btn-clear" style="width:100%; justify-content:center; margin-top:8px;">🚪 Déconnexion</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<!-- PANNEAU FILTRE -->
-<div id="filterPanel" class="filter-panel">
-  <div class="filter-header">
-    <span>Filtre</span>
-    <button id="btnFilterClear" class="filter-clear">Effacer filtre</button>
-  </div>
-  <div class="filter-group">
-    <label>Cours</label>
-    <select id="filterSelectCourse">
-      <option value="">Tous les cours</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label>Type de réservation</label>
-    <select id="filterSelectType">
-      <option value="">Tous les types</option>
-      <option value="theorie">Théorie</option>
-      <option value="exercices">Exercices</option>
-      <option value="labo">Laboratoire</option>
-      <option value="etude">Étude</option>
-    </select>
-  </div>
-  <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
-</div>
-<!-- PANNEAU COMPTE -->
-<div id="accountPanel" class="filter-panel" style="width:220px;">
-  <div class="filter-header">
-    <span>Mon compte</span>
-  </div>
-  <div class="filter-group">
-    <label>Connecté en tant que</label>
-    <div id="accountEmailDisplay" style="font-size:12px; color:#333; word-break:break-all;"></div>
-  </div>
-  <button id="btnLogout" class="btn-action btn-clear" style="width:100%; justify-content:center; margin-top:8px;">🚪 Déconnexion</button>
-</div>
-  
 <div id="drawingToolbar" class="drawing-toolbar">
   <button id="toolPen" class="tool-btn selected" title="Crayon">✏️</button>
   <button id="toolHighlighter" class="tool-btn" title="Surligneur">🖍️</button>
