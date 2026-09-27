@@ -378,6 +378,7 @@
   }
 
   // --- Gestion du panneau déroulant Catalogue par onglets ---
+    // --- Gestion du panneau déroulant Catalogue par onglets ---
   let catalogPanelOpen = false;
   function toggleCatalogPanel() {
     if (viewOnly) return;
@@ -389,6 +390,7 @@
     if (catalogPanelOpen) {
       $('panelCoursesTextarea').value = catalog.map((c) => c.subtitle ? c.name + ' | ' + c.subtitle : c.name).join('\n');
       $('panelTypesTextarea').value = typesListArray.join('\n');
+      $('panelLocauxTextarea').value = locations.join('\n');
     }
   }
 
@@ -407,13 +409,9 @@
       const tabName = btn.getAttribute('data-tab');
       document.querySelectorAll('.catalog-tab-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      if (tabName === 'courses') {
-        $('tabContentCourses').style.display = 'block';
-        $('tabContentTypes').style.display = 'none';
-      } else {
-        $('tabContentCourses').style.display = 'none';
-        $('tabContentTypes').style.display = 'block';
-      }
+      $('tabContentCourses').style.display = tabName === 'courses' ? 'block' : 'none';
+      $('tabContentTypes').style.display = tabName === 'types' ? 'block' : 'none';
+      $('tabContentLocaux').style.display = tabName === 'locaux' ? 'block' : 'none';
     });
   });
 
@@ -440,14 +438,22 @@
     typesListArray = normalizeTypes(lines);
     updateTypesDatalist();
     saveLocalAll(); scheduleCloudSave(); pushHistory();
-    toast("Liste des types mise à jour.");
+    toast("Liste des modalités mise à jour.");
     catalogPanelOpen = false;
     $('catalogDropdownPanel').classList.remove('open');
     $('btnCatalogToggle').classList.remove('btn-active');
   });
 
-  // Bouton de configuration des locaux existant
-  $('btnConfigLocations').addEventListener('click', () => openConfigModal('locations'));
+  $('btnSavePanelLocaux').addEventListener('click', () => {
+    const lines = $('panelLocauxTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
+    locations = normalizeLocations(lines);
+    updateLocationsDatalist();
+    saveLocalAll(); scheduleCloudSave(); pushHistory();
+    toast("Liste des locaux mise à jour.");
+    catalogPanelOpen = false;
+    $('catalogDropdownPanel').classList.remove('open');
+    $('btnCatalogToggle').classList.remove('btn-active');
+  });
 
   function openConfigModal(type) {
     if (viewOnly) return;
