@@ -113,9 +113,15 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 /* Mode compact : n'affiche que les émojis des boutons Catalogue / Filtre / Partager quand la barre déborde */
 .toolbar-compact .btn-label{ display:none; }
 .toolbar-compact .btn-action{ gap:0; padding-left:6px; padding-right:6px; }
-.btn-draw{ border-color:#6f42c1; } .btn-copy{ border-color:#007bff; } .btn-clear{ border-color:#dc3545; }
-.btn-logout{ border-color:#6c757d; } .btn-config{ border-color:#343a40; } .btn-history{ border-color:#495057; }
-.btn-filter{ border-color:#e8590c; } .btn-share{ border-color:#0ca678; }
+.btn-draw{ border-color:#6f42c1; color:#6f42c1; } 
+.btn-copy{ border-color:#007bff; color:#007bff; } 
+.btn-clear{ border-color:#dc3545; color:#dc3545; }
+.btn-logout{ border-color:#6c757d; color:#6c757d; } 
+.btn-config{ border-color:#343a40; color:#343a40; } 
+.btn-history{ border-color:#495057; color:#000000; font-size:18px; font-weight:bold; }
+.btn-filter{ border-color:#e8590c; color:#e8590c; } 
+.btn-share{ border-color:#0ca678; color:#0ca678; }
+
 .btn-active{ outline:2px solid #333; box-shadow:0 0 4px rgba(0,0,0,.5); }
 .btn-action:disabled{ opacity:.4; cursor:not-allowed; }
 .save-status{ display:none; }
@@ -278,3 +284,88 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   z-index: 300;
 }
 [data-tooltip]:hover::after{ opacity: 1; visibility: visible; }
+
+/* --- Optimisations mobiles et raccourcissement des boutons --- */
+@media (max-width: 768px) {
+  body {
+    padding: 0 4px;
+  }
+  .controls-box {
+    padding: 2px 4px;
+    gap: 3px;
+    min-height: 32px;
+  }
+  .controls-group {
+    gap: 3px;
+  }
+  .nav-bar-custom {
+    gap: 4px;
+    font-size: 10px;
+  }
+  .btn-today {
+    font-size: 10px;
+    padding: 2px 5px;
+    height: 22px;
+  }
+  .week-switcher {
+    gap: 2px;
+    padding: 1px 2px;
+  }
+  .btn-week-nav {
+    font-size: 11px;
+    padding: 0 2px;
+  }
+  .current-week-label {
+    font-size: 9.5px;
+  }
+  .date-range-container {
+    gap: 2px;
+    font-size: 9px;
+  }
+  .week-dates-btn {
+    font-size: 9px;
+    padding: 1px 3px;
+    gap: 1px;
+    height: 22px;
+  }
+  .btn-action {
+    padding: 1px 5px;
+    font-size: 10px;
+    height: 22px;
+    gap: 2px;
+  }
+  .viewonly-badge {
+    font-size: 9.5px;
+    padding: 1px 5px;
+  }
+}
+
+/* Mode compact renforcé (déclenché par JS ou petits écrans) */
+.toolbar-compact .btn-label {
+  display: none !important;
+}
+.toolbar-compact .btn-action {
+  gap: 0 !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  font-size: 10px !important;
+  height: 22px !important;
+}
+.toolbar-compact .controls-box {
+  gap: 2px !important;
+  padding: 2px 4px !important;
+}
+.toolbar-compact .controls-group {
+  gap: 2px !important;
+}
+.toolbar-compact .nav-bar-custom {
+  gap: 3px !important;
+}
+.toolbar-compact .btn-today {
+  padding: 2px 4px !important;
+  font-size: 9.5px !important;
+}
+.toolbar-compact .week-dates-btn {
+  padding: 1px 2px !important;
+  font-size: 8.5px !important;
+}
