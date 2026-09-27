@@ -179,6 +179,21 @@
     const rh = Math.max(30, Math.floor(available / H));
     document.documentElement.style.setProperty('--row-height', rh + 'px');
   }
+
+  // Calcule un facteur d'échelle unique pour que la largeur totale de la barre d'outils
+  // corresponde exactement à la largeur de la grille (le bloc semaine).
+  function updateButtonScale() {
+    const root = document.documentElement;
+    root.style.setProperty('--btn-scale', 1); // mesure à taille naturelle (PC) d'abord
+    const controlsBox = document.querySelector('.controls-box');
+    if (!controlsBox) return;
+    const naturalWidth = controlsBox.scrollWidth;
+    const availableWidth = controlsBox.clientWidth;
+    let scale = availableWidth / naturalWidth;
+    scale = Math.min(1, scale);       // jamais plus grand que la taille PC
+    scale = Math.max(0.55, scale);    // ne descend pas sous un seuil illisible ; au-delà, ça défile horizontalement
+    root.style.setProperty('--btn-scale', scale);
+  }
   function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
   function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
   
@@ -786,10 +801,11 @@
     applyViewOnlyUI();
   }
 
-  window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); });
+  window.addEventListener('resize', () => { updateRowHeight(); resizeCanvas(); updateButtonScale(); });
   
   initApp();
   goToWeek(getCurrentWeekKey());
+  updateButtonScale();
     // Partage / Exporter
   $('btnShare').addEventListener('click', () => { $('shareModal').classList.toggle('open'); });
   window.addEventListener('click', (e) => {
