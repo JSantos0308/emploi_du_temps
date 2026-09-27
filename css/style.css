@@ -25,18 +25,20 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .auth-skip{ text-align:center; margin-top:4px; }
 
 .controls-box{
-  background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:36px; width:100%;
-  display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap; flex:0 0 auto; z-index:20;
+  background:#fff; border-bottom:1px solid #e0e0e0; padding:clamp(2px,0.8vw,4px) clamp(3px,1.5vw,8px); min-height:36px; width:100%;
+  display:flex; justify-content:space-between; align-items:center; gap:clamp(2px,0.8vw,6px); flex-wrap:nowrap; flex:0 0 auto; z-index:20;
+  overflow-x:auto; overflow-y:hidden;
 }
-.controls-group{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.controls-group{ display:flex; align-items:center; gap:clamp(2px,0.8vw,6px); flex-wrap:nowrap; flex-shrink:0; }
 
 .nav-bar-custom {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: clamp(4px,1.2vw,8px);
+  font-size: clamp(9px,2.2vw,11px);
   font-weight: bold;
   color: #333;
+  flex-shrink:0;
 }
 .btn-today {
   background: none;
@@ -44,38 +46,42 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   cursor: pointer;
-  font-size: 11px;
+  font-size: clamp(9px,2.2vw,11px);
   font-weight: bold;
-  padding: 3px 8px;
+  padding: clamp(2px,0.6vw,3px) clamp(4px,1.6vw,8px);
+  flex-shrink:0;
+  white-space:nowrap;
 }
 .btn-today:hover { background: #f0f0f0; }
 
 .week-switcher {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: clamp(2px,0.6vw,4px);
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 1px 4px;
+  padding: clamp(1px,0.3vw,1px) clamp(2px,0.8vw,4px);
+  flex-shrink:0;
 }
 .btn-week-nav {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: clamp(10px,2.4vw,12px);
   font-weight: bold;
   color: #111;
-  padding: 0 2px;
+  padding: 0 clamp(1px,0.4vw,2px);
 }
 .btn-week-nav:hover { color: #000; }
-.current-week-label { font-size: 10.5px; text-transform: lowercase; }
+.current-week-label { font-size: clamp(8px,1.8vw,10.5px); text-transform: lowercase; }
 
 .date-range-container {
   display: flex;
   align-items: center;
-  gap: 3px;
-  font-size: 10px;
+  gap: clamp(2px,0.6vw,3px);
+  font-size: clamp(8px,1.8vw,10px);
+  flex-shrink:0;
 }
 .week-dates-btn {
   background: #f8f9fa;
@@ -83,12 +89,14 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   font-weight: bold;
-  font-size: 10px;
-  padding: 2px 4px;
+  font-size: clamp(8px,1.8vw,10px);
+  padding: clamp(1px,0.4vw,2px) clamp(2px,0.8vw,4px);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  flex-shrink:0;
+  white-space:nowrap;
 }
 .week-dates-btn:hover { background: #e9ecef; }
 .date-picker-hidden {
@@ -100,8 +108,8 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 
 .btn-action{
-  padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
-  background:transparent; color:#111; display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap;
+  padding:clamp(1px,0.4vw,2px) clamp(4px,1.4vw,7px); font-size:clamp(9px,2.2vw,11px); font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
+  background:transparent; color:#111; display:inline-flex; align-items:center; gap:clamp(1px,0.4vw,3px); height:clamp(20px,5vw,24px); white-space:nowrap; flex-shrink:0;
 }
 .btn-draw{ border-color:#6f42c1; } .btn-copy{ border-color:#007bff; } .btn-clear{ border-color:#dc3545; }
 .btn-logout{ border-color:#6c757d; } .btn-config{ border-color:#343a40; } .btn-history{ border-color:#495057; }
@@ -115,7 +123,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .save-dot.error{ background:#dc3545; }
 .save-dot.offline{ background:#6c757d; }
 
-.viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; }
+.viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; flex-shrink:0; white-space:nowrap; }
 
 /* Panneau déroulant du Catalogue par onglets */
 .catalog-dropdown-panel {
