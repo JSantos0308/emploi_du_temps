@@ -83,7 +83,17 @@
     </div>
 
     <button id="btnFilter" class="btn-action btn-filter" data-tooltip="Filtrer l'affichage">🔍 Filtre</button>
-    <button id="btnShare" class="btn-action btn-share" data-tooltip="Partager ou exporter">🔗 Partager</button>
+    <div style="position: relative; display: inline-block;">
+  <button id="btnShare" class="btn-action btn-share" data-tooltip="Partager ou exporter">🔗 Partager</button>
+  <div id="shareModal" class="catalog-dropdown-panel" style="width:220px;">
+    <p class="modal-hint" style="margin-bottom:8px;">Choisissez une action :</p>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button id="btnShareLink" class="btn-action btn-copy" style="justify-content:center; height:32px;">🔗 Copier le lien</button>
+      <button id="btnSharePDF" class="btn-action btn-export" style="justify-content:center; height:32px; background:#20c997; color:#111;">📄 Télécharger en PDF</button>
+      <button id="btnShareJSON" class="btn-action btn-import" style="justify-content:center; height:32px; background:#17a2b8;">💾 Télécharger en JSON</button>
+    </div>
+  </div>
+</div>
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
     <button id="btnAccount" class="btn-action btn-logout" data-tooltip="Mon compte">👤</button>
   </div>
