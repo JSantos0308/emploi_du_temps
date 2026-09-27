@@ -1,5 +1,4 @@
 :root {
-  --btn-scale: 1;
   --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
   --bg-default:#e9ecef;
   --border-color:#cccccc; --row-height:56px;
@@ -26,17 +25,17 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .auth-skip{ text-align:center; margin-top:4px; }
 
 .controls-box{
-  background:#fff; border-bottom:1px solid #e0e0e0; padding:calc(4px * var(--btn-scale)) calc(8px * var(--btn-scale)); min-height:36px; width:100%;
-  display:flex; justify-content:space-between; align-items:center; gap:calc(6px * var(--btn-scale)); flex-wrap:nowrap; flex:0 0 auto; z-index:20;
-  overflow-x:auto; overflow-y:hidden;
+  background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:36px; width:100%;
+  display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:nowrap; flex:0 0 auto; z-index:20;
+  overflow:hidden;
 }
-.controls-group{ display:flex; align-items:center; gap:calc(6px * var(--btn-scale)); flex-wrap:nowrap; flex-shrink:0; }
+.controls-group{ display:flex; align-items:center; gap:6px; flex-wrap:nowrap; flex-shrink:0; }
 
 .nav-bar-custom {
   display: flex;
   align-items: center;
-  gap: calc(8px * var(--btn-scale));
-  font-size: calc(11px * var(--btn-scale));
+  gap: 8px;
+  font-size: 11px;
   font-weight: bold;
   color: #333;
   flex-shrink:0;
@@ -47,9 +46,9 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   cursor: pointer;
-  font-size: calc(11px * var(--btn-scale));
+  font-size: 11px;
   font-weight: bold;
-  padding: calc(3px * var(--btn-scale)) calc(8px * var(--btn-scale));
+  padding: 3px 8px;
   flex-shrink:0;
   white-space:nowrap;
 }
@@ -58,30 +57,30 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .week-switcher {
   display: flex;
   align-items: center;
-  gap: calc(4px * var(--btn-scale));
+  gap: 4px;
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: calc(1px * var(--btn-scale)) calc(4px * var(--btn-scale));
+  padding: 1px 4px;
   flex-shrink:0;
 }
 .btn-week-nav {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: calc(12px * var(--btn-scale));
+  font-size: 12px;
   font-weight: bold;
   color: #111;
-  padding: 0 calc(2px * var(--btn-scale));
+  padding: 0 2px;
 }
 .btn-week-nav:hover { color: #000; }
-.current-week-label { font-size: calc(10.5px * var(--btn-scale)); text-transform: lowercase; }
+.current-week-label { font-size: 10.5px; text-transform: lowercase; }
 
 .date-range-container {
   display: flex;
   align-items: center;
-  gap: calc(3px * var(--btn-scale));
-  font-size: calc(10px * var(--btn-scale));
+  gap: 3px;
+  font-size: 10px;
   flex-shrink:0;
 }
 .week-dates-btn {
@@ -90,8 +89,8 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   font-weight: bold;
-  font-size: calc(10px * var(--btn-scale));
-  padding: calc(2px * var(--btn-scale)) calc(4px * var(--btn-scale));
+  font-size: 10px;
+  padding: 2px 4px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -109,9 +108,12 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 
 .btn-action{
-  padding:calc(2px * var(--btn-scale)) calc(7px * var(--btn-scale)); font-size:calc(11px * var(--btn-scale)); font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
-  background:transparent; color:#111; display:inline-flex; align-items:center; gap:calc(3px * var(--btn-scale)); height:calc(24px * var(--btn-scale)); white-space:nowrap; flex-shrink:0;
+  padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
+  background:transparent; color:#111; display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap; flex-shrink:0;
 }
+/* Mode compact : n'affiche que les émojis des boutons Catalogue / Filtre / Partager quand la barre déborde */
+.toolbar-compact .btn-label{ display:none; }
+.toolbar-compact .btn-action{ gap:0; padding-left:6px; padding-right:6px; }
 .btn-draw{ border-color:#6f42c1; } .btn-copy{ border-color:#007bff; } .btn-clear{ border-color:#dc3545; }
 .btn-logout{ border-color:#6c757d; } .btn-config{ border-color:#343a40; } .btn-history{ border-color:#495057; }
 .btn-filter{ border-color:#e8590c; } .btn-share{ border-color:#0ca678; }
