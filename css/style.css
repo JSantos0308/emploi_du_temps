@@ -169,7 +169,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 
 /* PANNEAU FILTRE */
 .filter-panel{
-  position:fixed; top:54px; right:10px; background:#fff; border:1px solid #ccc; border-radius:6px;
+  position:absolute; top:100%; right:0; left:auto; margin-top:14px; background:#fff; border:1px solid #ccc; border-radius:6px;
   box-shadow:0 4px 16px rgba(0,0,0,.2); padding:12px; width:280px; z-index:120; display:none; font-size:12px;
 }
 .filter-panel.open{ display:block; }
