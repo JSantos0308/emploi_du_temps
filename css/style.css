@@ -122,7 +122,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 4px;
+  margin-top: 14px;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 6px;
