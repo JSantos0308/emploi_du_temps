@@ -846,10 +846,18 @@
     const fontSize = $('pdfFontSize').value;
     const colorMode = $('pdfColorMode').value;
 
-    // Application temporaire des styles d'impression
     const wrapper = weeksWrapper;
     
-    // Si l'utilisateur a entré un titre, on peut l'insérer temporairement en haut si besoin
+    // Application temporaire des options de style (taille de police et mode couleur)
+    const originalFontSize = wrapper.style.fontSize;
+    const originalFilter = wrapper.style.filter;
+    
+    wrapper.style.fontSize = fontSize + 'px';
+    if (colorMode === 'grayscale') {
+      wrapper.style.filter = 'grayscale(100%)';
+    }
+
+    // Insertion temporaire du titre principal si renseigné
     let titleEl = null;
     if (customTitle) {
       titleEl = document.createElement('h2');
@@ -868,15 +876,19 @@
     };
 
     html2pdf().from(wrapper).set(opt).save().then(() => {
-      if (titleEl) titleEl.remove(); // Nettoyage du titre temporaire
+      // Nettoyage et restauration de l'affichage initial
+      if (titleEl) titleEl.remove();
+      wrapper.style.fontSize = originalFontSize;
+      wrapper.style.filter = originalFilter;
       toast("PDF téléchargé avec succès !");
     }).catch((err) => {
       if (titleEl) titleEl.remove();
+      wrapper.style.fontSize = originalFontSize;
+      wrapper.style.filter = originalFilter;
       toast("Erreur lors de la génération du PDF.");
       console.error(err);
     });
   });
-
   function goToWeek(wk) {
     currentVisibleWeek = wk;
     updateNavBarDisplay(wk);
