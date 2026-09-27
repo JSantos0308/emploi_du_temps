@@ -180,7 +180,6 @@
     document.documentElement.style.setProperty('--row-height', rh + 'px');
   }
 
-  // Mode compact automatique ou mobile
   function updateToolbarCompact() {
     const controlsBox = document.querySelector('.controls-box');
     if (!controlsBox) return;
@@ -377,7 +376,7 @@
     $('filterPanel').classList.remove('open');
   });
 
-  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').classList.contains('open') || $('configModal').style.display === 'flex'; }
+  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').classList.contains('open') || $('configModal').style.display === 'flex' || $('pdfModal').style.display === 'flex'; }
 
   function fillCoursesDatalist() {
     const list = $('coursesDatalist'); list.innerHTML = '';
@@ -475,28 +474,6 @@
     $('btnCatalogToggle').classList.remove('btn-active');
   });
 
-  function openConfigModal(type) {
-    if (viewOnly) return;
-    currentConfigType = type;
-    $('configError').textContent = '';
-    $('configModalTitle').textContent = "Liste des locaux";
-    $('configModalDesc').textContent = "Un local par ligne.";
-    $('configTextarea').value = locations.join('\n');
-    $('configModal').style.display = 'flex';
-  } 
-
-  let currentConfigType = null;
-  function closeConfigModal() { $('configModal').style.display = 'none'; }
-  function saveConfigModal() {
-    const lines = $('configTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
-    locations = normalizeLocations(lines);
-    updateLocationsDatalist();
-    saveLocalAll(); scheduleCloudSave(); pushHistory(); closeConfigModal();
-    toast("Liste des locaux mise à jour.");
-  }
-  $('btnSaveConfig').addEventListener('click', saveConfigModal);
-  $('btnCloseConfig').addEventListener('click', closeConfigModal);
-
   function openModal(week, day, hour) {
     if (viewOnly) return;
     const item = findItemAt(week, day, hour);
@@ -585,7 +562,16 @@
   });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').classList.remove('open'); $('configModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
+    if (e.key === 'Escape') { 
+      if (isModalOpen()) { 
+        closeModal(); 
+        $('shareModal').classList.remove('open'); 
+        $('configModal').style.display = 'none'; 
+        $('pdfModal').style.display = 'none';
+      } 
+      $('filterPanel').classList.remove('open'); 
+      return; 
+    }
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       if (isModalOpen()) return;
       const t = e.target; if (t && t.closest && t.closest('input,textarea,select')) return;
@@ -821,13 +807,13 @@
     dl.remove();
     $('shareModal').classList.remove('open');
   });
-  // Gestion du clic sur "Télécharger en PDF" dans le menu Partager
+
+  // --- Gestion du PDF ---
   $('btnSharePDF').addEventListener('click', () => {
     $('shareModal').classList.remove('open');
     $('pdfModal').style.display = 'flex';
   });
 
-  // Annuler la modale PDF
   $('btnCancelPDF').addEventListener('click', () => {
     $('pdfModal').style.display = 'none';
   });
@@ -835,35 +821,59 @@
     if (e.target === $('pdfModal')) $('pdfModal').style.display = 'none';
   });
 
-  // Génération effective du PDF avec les options choisies
   $('btnGeneratePDF').addEventListener('click', () => {
     $('pdfModal').style.display = 'none';
     toast("Génération du PDF en cours...");
 
     const customTitle = $('pdfTitleInput').value.trim();
-    const paperSize = $('pdfPaperSize').value;
     const orientation = $('pdfOrientation').value;
     const fontSize = $('pdfFontSize').value;
     const colorMode = $('pdfColorMode').value;
+    const weeksPerPage = parseInt($('pdfWeeksPerPage').value, 10) || 1;
 
     const wrapper = weeksWrapper;
-    
-    // Application temporaire des options de style (taille de police et mode couleur)
-    const originalFontSize = wrapper.style.fontSize;
-    const originalFilter = wrapper.style.filter;
-    
-    wrapper.style.fontSize = fontSize + 'px';
-    if (colorMode === 'grayscale') {
-      wrapper.style.filter = 'grayscale(100%)';
-    }
 
-    // Insertion temporaire du titre principal si renseigné
+    // 1. Application des sauts de page selon le nombre de semaines par page
+    const weekBlocks = wrapper.querySelectorAll('.week-block');
+    weekBlocks.forEach((block, index) => {
+      if ((index + 1) % weeksPerPage === 0 && index < weekBlocks.length - 1) {
+        block.style.pageBreakAfter = 'always';
+        block.style.breakAfter = 'page';
+      } else {
+        block.style.pageBreakAfter = 'auto';
+        block.style.breakAfter = 'auto';
+      }
+    });
+
+    // 2. Injection de styles dynamiques pour la police et le mode noir et blanc
+    const styleEl = document.createElement('style');
+    styleEl.id = 'temp-pdf-style';
+    let cssRules = `
+      .course-card .header-title { font-size: ${fontSize}px !important; }
+      .course-card .subtitle { font-size: ${Math.max(6, fontSize - 1)}px !important; }
+      .course-card .location { font-size: ${Math.max(6, fontSize - 2)}px !important; }
+      .header-cell { font-size: ${fontSize}px !important; }
+      .time-cell { font-size: ${Math.max(6, fontSize - 1)}px !important; }
+    `;
+
+    if (colorMode === 'grayscale') {
+      cssRules += `
+        .course-card { background: #f2f2f2 !important; color: #000 !important; border: 1px solid #333 !important; }
+        .course-card .subtitle, .course-card .location { color: #333 !important; }
+        .header-cell.today-col { background: #ddd !important; color: #000 !important; }
+        .time-cell { background: #eaeaea !important; color: #000 !important; }
+      `;
+    }
+    styleEl.innerHTML = cssRules;
+    document.head.appendChild(styleEl);
+
+    // 3. Insertion temporaire du titre principal si renseigné
     let titleEl = null;
     if (customTitle) {
       titleEl = document.createElement('h2');
       titleEl.textContent = customTitle;
       titleEl.style.textAlign = 'center';
-      titleEl.style.marginBottom = '10px';
+      titleEl.style.marginBottom = '15px';
       wrapper.prepend(titleEl);
     }
 
@@ -872,23 +882,32 @@
       filename:     'emploi_du_temps.pdf',
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF:        { unit: 'mm', format: paperSize, orientation: orientation }
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: orientation }
     };
 
     html2pdf().from(wrapper).set(opt).save().then(() => {
-      // Nettoyage et restauration de l'affichage initial
+      // Nettoyage après génération
       if (titleEl) titleEl.remove();
-      wrapper.style.fontSize = originalFontSize;
-      wrapper.style.filter = originalFilter;
+      const injectedStyle = $('temp-pdf-style');
+      if (injectedStyle) injectedStyle.remove();
+      weekBlocks.forEach((block) => {
+        block.style.pageBreakAfter = '';
+        block.style.breakAfter = '';
+      });
       toast("PDF téléchargé avec succès !");
     }).catch((err) => {
       if (titleEl) titleEl.remove();
-      wrapper.style.fontSize = originalFontSize;
-      wrapper.style.filter = originalFilter;
+      const injectedStyle = $('temp-pdf-style');
+      if (injectedStyle) injectedStyle.remove();
+      weekBlocks.forEach((block) => {
+        block.style.pageBreakAfter = '';
+        block.style.breakAfter = '';
+      });
       toast("Erreur lors de la génération du PDF.");
       console.error(err);
     });
   });
+
   function goToWeek(wk) {
     currentVisibleWeek = wk;
     updateNavBarDisplay(wk);
@@ -897,12 +916,7 @@
   }
 
   $('btnTodayNav').addEventListener('click', () => goToWeek(getCurrentWeekKey()));
-  $('btnPrevWeek').addEventListener('click', () => {
-    let n = weekNum(currentVisibleWeek) - 1;
-    if (n < 1) n = 1;
-    goToWeek(weekKey(n));
-  });
-  $('btnNextWeek').addEventListener('click', () => {
+  $('btnPrevWeek').addEventListener('click', () => {     let n = weekNum(currentVisibleWeek) - 1;     if (n < 1) n = 1;     goToWeek(weekKey(n));   });$('btnNextWeek').addEventListener('click', () => {
     let n = weekNum(currentVisibleWeek) + 1;
     if (n > CONFIG.weeks) n = CONFIG.weeks;
     goToWeek(weekKey(n));
@@ -942,12 +956,12 @@
   }
 
   $('btnStartDate').addEventListener('click', () => {
-    $('startDatePicker').showPicker?.() || $('startDatePicker').click();
+    $('startDatePicker').showPicker?.() \vert{}\vert{} $('startDatePicker').click();
   });
   $('startDatePicker').addEventListener('change', applyDateRangeFilter);
 
   $('btnEndDate').addEventListener('click', () => {
-    $('endDatePicker').showPicker?.() || $('endDatePicker').click();
+    $('endDatePicker').showPicker?.() \vert{}\vert{} $('endDatePicker').click();
   });
   $('endDatePicker').addEventListener('change', applyDateRangeFilter);
 
