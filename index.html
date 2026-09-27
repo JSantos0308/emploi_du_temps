@@ -65,19 +65,19 @@
 
         <div id="tabContentCourses" class="catalog-tab-content">
           <p class="modal-hint" style="margin-bottom:6px;">Format : Nom | Intitulé (facultatif)</p>
-          <textarea id="panelCoursesTextarea" rows="7" placeholder="ELECH3001 | Électricité..."></textarea>
+          <textarea id="panelCoursesTextarea" rows="7" placeholder="Ajouter des cours ..."></textarea>
           <button id="btnSavePanelCourses" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les cours</button>
         </div>
 
         <div id="tabContentTypes" class="catalog-tab-content" style="display:none;">
           <p class="modal-hint" style="margin-bottom:6px;">Une modalité par ligne (ex: Exercices 1, TP...)</p>
-          <textarea id="panelTypesTextarea" rows="7" placeholder="Théorie&#10;Exercices..."></textarea>
+          <textarea id="panelTypesTextarea" rows="7" placeholder="Ajouter des modalités ..."></textarea>
           <button id="btnSavePanelTypes" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les modalités</button>
         </div>
 
         <div id="tabContentLocaux" class="catalog-tab-content" style="display:none;">
           <p class="modal-hint" style="margin-bottom:6px;">Un local par ligne.</p>
-          <textarea id="panelLocauxTextarea" rows="7" placeholder="Bibliothèque&#10;Maison..."></textarea>
+          <textarea id="panelLocauxTextarea" rows="7" placeholder="Ajouter des locaux ..."></textarea>
           <button id="btnSavePanelLocaux" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les locaux</button>
         </div>
       </div>
@@ -98,15 +98,11 @@
           </select>
         </div>
         <div class="filter-group">
-          <label>Type de réservation</label>
-          <select id="filterSelectType">
-            <option value="">Tous les types</option>
-            <option value="theorie">Théorie</option>
-            <option value="exercices">Exercices</option>
-            <option value="labo">Laboratoire</option>
-            <option value="etude">Étude</option>
-          </select>
-        </div>
+  <label>Modalité</label>
+  <select id="filterSelectType">
+    <option value="">Toutes les modalités</option>
+  </select>
+</div>
         <button id="btnFilterApply" class="btn-filter-submit">Filtre</button>
       </div>
     </div>
