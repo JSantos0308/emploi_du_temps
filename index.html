@@ -206,5 +206,52 @@
 
 <script type="module" src="js/auth.js"></script>
 <script src="js/app.js"></script>
+  <div class="modal" id="pdfModal" role="dialog" aria-modal="true">
+  <div class="modal-content" style="width:380px;">
+    <h3 style="margin:0 0 4px;">Document PDF (Imprimer)</h3>
+    <div>
+      <label for="pdfTitleInput">Titre principal</label>
+      <input type="text" id="pdfTitleInput" placeholder="Mon Emploi du Temps XL">
+    </div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <div>
+        <label for="pdfPaperSize">Taille de papier</label>
+        <select id="pdfPaperSize">
+          <option value="a4" selected>A4</option>
+          <option value="letter">Letter</option>
+        </select>
+      </div>
+      <div>
+        <label for="pdfOrientation">Orientation</label>
+        <select id="pdfOrientation">
+          <option value="landscape" selected>Paysage</option>
+          <option value="portrait">Portrait</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <div>
+        <label for="pdfFontSize">Taille de police</label>
+        <select id="pdfFontSize">
+          <option value="8">8</option>
+          <option value="9" selected>9</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+        </select>
+      </div>
+      <div>
+        <label for="pdfColorMode">Couleur</label>
+        <select id="pdfColorMode">
+          <option value="color" selected>Couleur</option>
+          <option value="grayscale">Noir et blanc</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top: 6px; display:flex; flex-direction:column; gap:6px;">
+      <button id="btnGeneratePDF" class="btn-action btn-save" style="width:100%; justify-content:center; background:#0f5132; color:#fff; height:32px;">Créer PDF</button>
+      <button id="btnCancelPDF" class="btn-action btn-cancel" style="width:100%; justify-content:center; height:32px;">Annuler</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
