@@ -93,7 +93,7 @@
     }));
     return out;
   }
-    function normalizeTypes(raw) {
+  function normalizeTypes(raw) {
     if (!Array.isArray(raw)) return [];
     const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 50)).slice(0, 100);
     return out;
@@ -180,16 +180,16 @@
     document.documentElement.style.setProperty('--row-height', rh + 'px');
   }
 
-  // Si la barre d'outils déborde de l'écran, passe en mode compact : les boutons
-  // qui ont un émoji + du texte (Catalogue, Filtre, Partager) n'affichent plus que l'émoji.
+  // Mode compact automatique ou mobile
   function updateToolbarCompact() {
     const controlsBox = document.querySelector('.controls-box');
     if (!controlsBox) return;
-    controlsBox.classList.remove('toolbar-compact'); // on repart de la taille normale pour mesurer
-    if (controlsBox.scrollWidth > controlsBox.clientWidth) {
+    controlsBox.classList.remove('toolbar-compact');
+    if (controlsBox.scrollWidth > controlsBox.clientWidth || window.innerWidth <= 768) {
       controlsBox.classList.add('toolbar-compact');
     }
   }
+
   function fmtShort(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); }
   function mondayOf(n) { const d = new Date(CONFIG.startDateS1); d.setDate(d.getDate() + (n-1)*7); return d; }
   
@@ -333,7 +333,7 @@
     }));
   }
 
-    function refreshFilterOptions() {
+  function refreshFilterOptions() {
     const selectCourse = $('filterSelectCourse');
     selectCourse.innerHTML = '<option value="">Tous les cours</option>';
     catalog.map((c) => c.name).sort().forEach((name) => {
@@ -399,8 +399,6 @@
     });
   }
 
-  // --- Gestion du panneau déroulant Catalogue par onglets ---
-    // --- Gestion du panneau déroulant Catalogue par onglets ---
   let catalogPanelOpen = false;
   function toggleCatalogPanel() {
     if (viewOnly) return;
@@ -579,7 +577,7 @@
   $('btnModalPaste').addEventListener('click', pasteCourseModal);
   $('btnCancelCourse').addEventListener('click', closeModal);
   $('courseModal').addEventListener('click', (e) => { if (e.target === $('courseModal')) closeModal(); });
-    $('courseModal').addEventListener('keydown', (e) => {
+  $('courseModal').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
       e.preventDefault();
       saveCourse();
@@ -747,7 +745,7 @@
     }, 1200);
   }
 
- async function loadCloudData(uid) {
+  async function loadCloudData(uid) {
     try {
       const fs = window.__fs;
       const snap = await fs.getDoc(fs.doc(fs.db, 'timetables', uid));
@@ -760,7 +758,6 @@
         typesListArray = normalizeTypes(data.types);
         saveLocalAll();
       } else {
-        // Si le nouveau compte n'a pas de données en ligne, on réinitialise à vide !
         courses = normalizeCourses({});
         strokes = [];
         saveLocalAll();
@@ -802,7 +799,7 @@
   initApp();
   goToWeek(getCurrentWeekKey());
   updateToolbarCompact();
-    // Partage / Exporter
+
   $('btnShare').addEventListener('click', () => { $('shareModal').classList.toggle('open'); });
   window.addEventListener('click', (e) => {
     if (!e.target.closest('#btnShare') && !e.target.closest('#shareModal')) {
@@ -830,7 +827,7 @@
     const element = weeksWrapper;
     html2pdf().from(element).save('emploi_du_temps.pdf');
   });
-  // Navigation semaines
+
   function goToWeek(wk) {
     currentVisibleWeek = wk;
     updateNavBarDisplay(wk);
@@ -850,7 +847,7 @@
     goToWeek(weekKey(n));
   });
 
-    function dateToWeekNum(dateVal) {
+  function dateToWeekNum(dateVal) {
     const selectedDate = new Date(dateVal);
     const start = new Date(CONFIG.startDateS1.getFullYear(), CONFIG.startDateS1.getMonth(), CONFIG.startDateS1.getDate());
     const diffTime = selectedDate - start;
