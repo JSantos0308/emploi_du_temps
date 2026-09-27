@@ -40,14 +40,15 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 .btn-today {
   background: none;
-  border: none;
-  color: #007bff;
+  border: 1px solid #111;
+  border-radius: 4px;
+  color: #111;
   cursor: pointer;
   font-size: 11px;
   font-weight: bold;
-  padding: 1px 3px;
+  padding: 3px 8px;
 }
-.btn-today:hover { text-decoration: underline; }
+.btn-today:hover { background: #f0f0f0; }
 
 .week-switcher {
   display: flex;
@@ -64,10 +65,10 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   cursor: pointer;
   font-size: 12px;
   font-weight: bold;
-  color: #007bff;
+  color: #111;
   padding: 0 2px;
 }
-.btn-week-nav:hover { color: #0056b3; }
+.btn-week-nav:hover { color: #000; }
 .current-week-label { font-size: 10.5px; text-transform: lowercase; }
 
 .date-range-container {
@@ -80,7 +81,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
-  color: #0f5132;
+  color: #111;
   font-weight: bold;
   font-size: 10px;
   padding: 2px 4px;
