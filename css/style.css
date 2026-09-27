@@ -137,7 +137,8 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .catalog-dropdown-panel {
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0;
+  left: auto;
   margin-top: 14px;
   background: #fff;
   border: 1px solid #ccc;
