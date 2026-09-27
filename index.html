@@ -25,42 +25,43 @@
   <!-- Groupe GAUCHE : Aujourd'hui, < >, Date de début - Date de fin -->
   <div class="controls-group">
     <div class="nav-bar-custom">
-      <button id="btnTodayNav" class="btn-today">Aujourd'hui</button>
+      <button id="btnTodayNav" class="btn-today" data-tooltip="Aller à aujourd'hui">Aujourd'hui</button>
       <div class="week-switcher">
-        <button id="btnPrevWeek" class="btn-week-nav" title="Semaine précédente">&lt;</button>
+        <button id="btnPrevWeek" class="btn-week-nav" data-tooltip="Aller à la semaine précédente">&lt;</button>
         <span id="currentWeekText" class="current-week-label">s1</span>
-        <button id="btnNextWeek" class="btn-week-nav" title="Semaine suivante">&gt;</button>
+        <button id="btnNextWeek" class="btn-week-nav" data-tooltip="Aller à la semaine suivante">&gt;</button>
       </div>
       <div class="date-range-container">
-        <button id="btnStartDate" class="week-dates-btn" title="Choisir la date de début"><span id="startDateText">14/09/2026</span></button>
+        <button id="btnStartDate" class="week-dates-btn" data-tooltip="Choisir la date de début"><span id="startDateText">14/09/2026</span></button>
         <input type="date" id="startDatePicker" class="date-picker-hidden">
         <span>-</span>
-        <button id="btnEndDate" class="week-dates-btn" title="Choisir la date de fin"><span id="endDateText">20/12/2026</span></button>
+        <button id="btnEndDate" class="week-dates-btn" data-tooltip="Choisir la date de fin"><span id="endDateText">20/12/2026</span></button>
         <input type="date" id="endDatePicker" class="date-picker-hidden">
       </div>
     </div>
     <span id="viewOnlyBadge" class="viewonly-badge" style="display:none;">👁️ Lecture seule</span>
-    <button id="btnGoLogin" class="btn-action btn-share" style="display:none;">🔑 Se connecter</button>
+    <button id="btnGoLogin" class="btn-action btn-share" style="display:none;" data-tooltip="Se connecter">🔑</button>
   </div>
   <div class="controls-group">
-    <button id="btnUndo" class="btn-action btn-history" title="Annuler (Ctrl+Z)">←</button>
-    <button id="btnRedo" class="btn-action btn-history" title="Rétablir (Ctrl+Y)">→</button>
-    <button id="btnPencil" class="btn-action btn-draw">✏️ Dessiner</button>
-    <button id="btnCopyPrev" class="btn-action btn-copy">📋 Copier Préc.</button>
-    <button id="btnClearWeek" class="btn-action btn-clear">🗑️ Effacer Semaine</button>
+    <button id="btnUndo" class="btn-action btn-history" data-tooltip="Revenir en arrière">←</button>
+    <button id="btnRedo" class="btn-action btn-history" data-tooltip="Avancer">→</button>
+    <button id="btnPencil" class="btn-action btn-draw" data-tooltip="Dessiner à main levée">✏️</button>
+    <button id="btnCopyPrev" class="btn-action btn-copy" data-tooltip="Copier la semaine précédente">📋</button>
+    <button id="btnClearWeek" class="btn-action btn-clear" data-tooltip="Effacer toute la semaine">🗑️</button>
   </div>
 
-  <!-- Groupe DROITE : Catalogue, Locaux, Filtre, Partager, Statut, Compte -->
+  <!-- Groupe DROITE : Catalogue, Filtre, Partager, Statut, Compte -->
   <div class="controls-group">
     <!-- Panneau déroulant du Catalogue par onglets -->
     <div style="position: relative; display: inline-block;">
-      <button id="btnCatalogToggle" class="btn-action btn-config">📚 Catalogue</button>
+      <button id="btnCatalogToggle" class="btn-action btn-config" data-tooltip="Gérer cours, modalités et locaux">📚 Catalogue</button>
       <div id="catalogDropdownPanel" class="catalog-dropdown-panel">
         <div class="catalog-tabs">
           <button class="catalog-tab-btn active" data-tab="courses">📖 Cours</button>
-          <button class="catalog-tab-btn" data-tab="types">🏷️ Types</button>
+          <button class="catalog-tab-btn" data-tab="types">🏷️ Modalités</button>
+          <button class="catalog-tab-btn" data-tab="locaux">📍 Locaux</button>
         </div>
-        
+
         <div id="tabContentCourses" class="catalog-tab-content">
           <p class="modal-hint" style="margin-bottom:6px;">Format : Nom | Intitulé (facultatif)</p>
           <textarea id="panelCoursesTextarea" rows="7" placeholder="ELECH3001 | Électricité..."></textarea>
@@ -68,18 +69,23 @@
         </div>
 
         <div id="tabContentTypes" class="catalog-tab-content" style="display:none;">
-          <p class="modal-hint" style="margin-bottom:6px;">Un type par ligne (ex: Exercices 1, TP...)</p>
+          <p class="modal-hint" style="margin-bottom:6px;">Une modalité par ligne (ex: Exercices 1, TP...)</p>
           <textarea id="panelTypesTextarea" rows="7" placeholder="Théorie&#10;Exercices..."></textarea>
-          <button id="btnSavePanelTypes" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les types</button>
+          <button id="btnSavePanelTypes" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les modalités</button>
+        </div>
+
+        <div id="tabContentLocaux" class="catalog-tab-content" style="display:none;">
+          <p class="modal-hint" style="margin-bottom:6px;">Un local par ligne.</p>
+          <textarea id="panelLocauxTextarea" rows="7" placeholder="Bibliothèque&#10;Maison..."></textarea>
+          <button id="btnSavePanelLocaux" class="btn-action btn-save" style="width:100%; margin-top:6px; justify-content:center;">Enregistrer les locaux</button>
         </div>
       </div>
     </div>
 
-    <button id="btnConfigLocations" class="btn-action btn-config">⚙️ Locaux</button>
-    <button id="btnFilter" class="btn-action btn-filter">🔍 Filtre</button>
-    <button id="btnShare" class="btn-action btn-share">🔗 Partager</button>
+    <button id="btnFilter" class="btn-action btn-filter" data-tooltip="Filtrer l'affichage">🔍 Filtre</button>
+    <button id="btnShare" class="btn-action btn-share" data-tooltip="Partager ou exporter">🔗 Partager</button>
     <span id="saveStatus" class="save-status"><span class="save-dot" id="saveDot"></span><span id="saveText">Hors ligne</span></span>
-    <button id="btnAccount" class="btn-action btn-logout" title="Mon compte">👤</button>
+    <button id="btnAccount" class="btn-action btn-logout" data-tooltip="Mon compte">👤</button>
   </div>
 </div>
 
