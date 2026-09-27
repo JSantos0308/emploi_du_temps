@@ -821,11 +821,60 @@
     dl.remove();
     $('shareModal').classList.remove('open');
   });
+  // Gestion du clic sur "Télécharger en PDF" dans le menu Partager
   $('btnSharePDF').addEventListener('click', () => {
     $('shareModal').classList.remove('open');
+    $('pdfModal').style.display = 'flex';
+  });
+
+  // Annuler la modale PDF
+  $('btnCancelPDF').addEventListener('click', () => {
+    $('pdfModal').style.display = 'none';
+  });
+  $('pdfModal').addEventListener('click', (e) => {
+    if (e.target === $('pdfModal')) $('pdfModal').style.display = 'none';
+  });
+
+  // Génération effective du PDF avec les options choisies
+  $('btnGeneratePDF').addEventListener('click', () => {
+    $('pdfModal').style.display = 'none';
     toast("Génération du PDF en cours...");
-    const element = weeksWrapper;
-    html2pdf().from(element).save('emploi_du_temps.pdf');
+
+    const customTitle = $('pdfTitleInput').value.trim();
+    const paperSize = $('pdfPaperSize').value;
+    const orientation = $('pdfOrientation').value;
+    const fontSize = $('pdfFontSize').value;
+    const colorMode = $('pdfColorMode').value;
+
+    // Application temporaire des styles d'impression
+    const wrapper = weeksWrapper;
+    
+    // Si l'utilisateur a entré un titre, on peut l'insérer temporairement en haut si besoin
+    let titleEl = null;
+    if (customTitle) {
+      titleEl = document.createElement('h2');
+      titleEl.textContent = customTitle;
+      titleEl.style.textAlign = 'center';
+      titleEl.style.marginBottom = '10px';
+      wrapper.prepend(titleEl);
+    }
+
+    const opt = {
+      margin:       5,
+      filename:     'emploi_du_temps.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF:        { unit: 'mm', format: paperSize, orientation: orientation }
+    };
+
+    html2pdf().from(wrapper).set(opt).save().then(() => {
+      if (titleEl) titleEl.remove(); // Nettoyage du titre temporaire
+      toast("PDF téléchargé avec succès !");
+    }).catch((err) => {
+      if (titleEl) titleEl.remove();
+      toast("Erreur lors de la génération du PDF.");
+      console.error(err);
+    });
   });
 
   function goToWeek(wk) {
