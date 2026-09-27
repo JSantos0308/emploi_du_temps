@@ -956,12 +956,12 @@
   }
 
   $('btnStartDate').addEventListener('click', () => {
-    $('startDatePicker').showPicker?.() \vert{}\vert{} $('startDatePicker').click();
+    $('startDatePicker').showPicker?.() || $('startDatePicker').click();
   });
   $('startDatePicker').addEventListener('change', applyDateRangeFilter);
 
   $('btnEndDate').addEventListener('click', () => {
-    $('endDatePicker').showPicker?.() \vert{}\vert{} $('endDatePicker').click();
+    $('endDatePicker').showPicker?.() || $('endDatePicker').click();
   });
   $('endDatePicker').addEventListener('change', applyDateRangeFilter);
 
