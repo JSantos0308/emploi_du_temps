@@ -360,7 +360,7 @@
     $('filterPanel').classList.remove('open');
   });
 
-  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').style.display === 'flex' || $('configModal').style.display === 'flex'; }
+  function isModalOpen() { return $('courseModal').style.display === 'flex' || $('shareModal').classList.contains('open') || $('configModal').style.display === 'flex'; }
 
   function fillCoursesDatalist() {
     const list = $('coursesDatalist'); list.innerHTML = '';
@@ -564,8 +564,7 @@
   $('courseModal').addEventListener('click', (e) => { if (e.target === $('courseModal')) closeModal(); });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').style.display = 'none'; $('configModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
-
+    if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').classList.remove('open'); $('configModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       if (isModalOpen()) return;
       const t = e.target; if (t && t.closest && t.closest('input,textarea,select')) return;
