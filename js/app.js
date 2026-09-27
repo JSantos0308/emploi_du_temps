@@ -568,6 +568,12 @@
   $('btnModalPaste').addEventListener('click', pasteCourseModal);
   $('btnCancelCourse').addEventListener('click', closeModal);
   $('courseModal').addEventListener('click', (e) => { if (e.target === $('courseModal')) closeModal(); });
+    $('courseModal').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      saveCourse();
+    }
+  });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { if (isModalOpen()) { closeModal(); $('shareModal').classList.remove('open'); $('configModal').style.display = 'none'; } $('filterPanel').classList.remove('open'); return; }
