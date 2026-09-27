@@ -1,13 +1,13 @@
 (function () {
   'use strict';
 
-  const CONFIG = {
+   const CONFIG = {
     startDateS1: new Date(2026, 8, 14),
     weeks: 14,
     hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"],
     defaultCatalog: [],
-    defaultLocations: ["Bibliothèque","Maison"],
-    defaultTypes: ["Théorie", "Exercices", "Laboratoire", "Étude"]
+    defaultLocations: [],
+    defaultTypes: []
   };
 
   const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
@@ -93,15 +93,15 @@
     }));
     return out;
   }
-  function normalizeTypes(raw) {
-    if (!Array.isArray(raw)) return CONFIG.defaultTypes.slice();
+    function normalizeTypes(raw) {
+    if (!Array.isArray(raw)) return [];
     const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 50)).slice(0, 100);
-    return out.length ? out : CONFIG.defaultTypes.slice();
+    return out;
   }
   function normalizeLocations(raw) {
-    if (!Array.isArray(raw)) return CONFIG.defaultLocations.slice();
+    if (!Array.isArray(raw)) return [];
     const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 80)).slice(0, 300);
-    return out.length ? out : CONFIG.defaultLocations.slice();
+    return out;
   }
 
   function serializeAll() {
@@ -266,7 +266,7 @@
 
   function cardMatchesFilter(item) {
     if (filter.course && item.title !== filter.course) return false;
-    if (filter.type && getBaseType(item.type) !== filter.type) return false;
+    if (filter.type && item.type !== filter.type) return false;
     return true;
   }
 
@@ -322,18 +322,24 @@
     }));
   }
 
-  function refreshFilterOptions() {
+    function refreshFilterOptions() {
     const selectCourse = $('filterSelectCourse');
     selectCourse.innerHTML = '<option value="">Tous les cours</option>';
-    const namesSet = new Set();
-    Object.keys(courses).forEach((wk) => courses[wk].forEach((it) => namesSet.add(it.title)));
-    Array.from(namesSet).sort().forEach((name) => {
+    catalog.map((c) => c.name).sort().forEach((name) => {
       const opt = document.createElement('option');
       opt.value = name; opt.textContent = name;
       if (filter.course === name) opt.selected = true;
       selectCourse.appendChild(opt);
     });
-    $('filterSelectType').value = filter.type;
+
+    const selectType = $('filterSelectType');
+    selectType.innerHTML = '<option value="">Toutes les modalités</option>';
+    typesListArray.slice().sort().forEach((t) => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      if (filter.type === t) opt.selected = true;
+      selectType.appendChild(opt);
+    });
   }
 
   $('btnFilter').addEventListener('click', () => { refreshFilterOptions(); $('filterPanel').classList.toggle('open'); });
