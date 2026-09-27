@@ -27,7 +27,6 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .controls-box{
   background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:36px; width:100%;
   display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:nowrap; flex:0 0 auto; z-index:20;
-  overflow:hidden;
 }
 .controls-group{ display:flex; align-items:center; gap:6px; flex-wrap:nowrap; flex-shrink:0; }
 
