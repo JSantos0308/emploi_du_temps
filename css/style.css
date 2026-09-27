@@ -24,17 +24,18 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .auth-msg.ok{ color:#1a7431; }
 .auth-skip{ text-align:center; margin-top:4px; }
 
+/* --- Barre d'outils (Taille confortable sur PC) --- */
 .controls-box{
-  background:#fff; border-bottom:1px solid #e0e0e0; padding:4px 8px; min-height:36px; width:100%;
-  display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:nowrap; flex:0 0 auto; z-index:20;
+  background:#fff; border-bottom:1px solid #e0e0e0; padding:8px 12px; min-height:44px; width:100%;
+  display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:nowrap; flex:0 0 auto; z-index:20;
 }
-.controls-group{ display:flex; align-items:center; gap:6px; flex-wrap:nowrap; flex-shrink:0; }
+.controls-group{ display:flex; align-items:center; gap:8px; flex-wrap:nowrap; flex-shrink:0; }
 
 .nav-bar-custom {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 10px;
+  font-size: 13px;
   font-weight: bold;
   color: #333;
   flex-shrink:0;
@@ -45,9 +46,9 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: bold;
-  padding: 3px 8px;
+  padding: 5px 10px;
   flex-shrink:0;
   white-space:nowrap;
 }
@@ -56,30 +57,30 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .week-switcher {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 1px 4px;
+  padding: 3px 6px;
   flex-shrink:0;
 }
 .btn-week-nav {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: bold;
   color: #111;
-  padding: 0 2px;
+  padding: 0 4px;
 }
 .btn-week-nav:hover { color: #000; }
-.current-week-label { font-size: 10.5px; text-transform: lowercase; }
+.current-week-label { font-size: 12px; text-transform: lowercase; }
 
 .date-range-container {
   display: flex;
   align-items: center;
-  gap: 3px;
-  font-size: 10px;
+  gap: 6px;
+  font-size: 12px;
   flex-shrink:0;
 }
 .week-dates-btn {
@@ -88,12 +89,12 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   font-weight: bold;
-  font-size: 10px;
-  padding: 2px 4px;
+  font-size: 12px;
+  padding: 4px 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-shrink:0;
   white-space:nowrap;
 }
@@ -107,12 +108,11 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 
 .btn-action{
-  padding:2px 7px; font-size:11px; font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
-  background:transparent; color:#111; display:inline-flex; align-items:center; gap:3px; height:24px; white-space:nowrap; flex-shrink:0;
+  padding:5px 10px; font-size:12px; font-weight:bold; border-radius:4px; border:1px solid; cursor:pointer;
+  background:transparent; color:#111; display:inline-flex; align-items:center; gap:6px; height:32px; white-space:nowrap; flex-shrink:0;
 }
-/* Mode compact : n'affiche que les émojis des boutons Catalogue / Filtre / Partager quand la barre déborde */
-.toolbar-compact .btn-label{ display:none; }
-.toolbar-compact .btn-action{ gap:0; padding-left:6px; padding-right:6px; }
+
+/* Couleurs des boutons d'action */
 .btn-draw{ border-color:#6f42c1; color:#6f42c1; } 
 .btn-copy{ border-color:#007bff; color:#007bff; } 
 .btn-clear{ border-color:#dc3545; color:#dc3545; }
@@ -133,7 +133,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 
 .viewonly-badge{ background:#e8590c; color:#fff; border-radius:3px; padding:2px 8px; font-size:11px; flex-shrink:0; white-space:nowrap; }
 
-/* Panneau déroulant du Catalogue par onglets */
+/* Panneau déroulant du Catalogue (aligné à droite pour ne pas sortir de l'écran) */
 .catalog-dropdown-panel {
   position: absolute;
   top: 100%;
@@ -286,7 +286,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 [data-tooltip]:hover::after{ opacity: 1; visibility: visible; }
 
-/* --- Optimisations mobiles et raccourcissement des boutons --- */
+/* --- Optimisations mobiles uniquement (écrans <= 768px) --- */
 @media (max-width: 768px) {
   body {
     padding: 0 4px;
