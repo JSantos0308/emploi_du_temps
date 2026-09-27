@@ -337,6 +337,11 @@
   }
 
   $('btnFilter').addEventListener('click', () => { refreshFilterOptions(); $('filterPanel').classList.toggle('open'); });
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#btnFilter') && !e.target.closest('#filterPanel')) {
+      $('filterPanel').classList.remove('open');
+    }
+  });
   $('btnAccount').addEventListener('click', () => { $('accountPanel').classList.toggle('open'); });
   window.addEventListener('click', (e) => {
     if (!e.target.closest('#btnAccount') && !e.target.closest('#accountPanel')) {
@@ -774,13 +779,17 @@
   
   initApp();
   goToWeek(getCurrentWeekKey());
-  // Partage / Exporter
-  $('btnShare').addEventListener('click', () => { $('shareModal').style.display = 'flex'; });
-  $('btnShareClose').addEventListener('click', () => { $('shareModal').style.display = 'none'; });
+    // Partage / Exporter
+  $('btnShare').addEventListener('click', () => { $('shareModal').classList.toggle('open'); });
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#btnShare') && !e.target.closest('#shareModal')) {
+      $('shareModal').classList.remove('open');
+    }
+  });
   $('btnShareLink').addEventListener('click', () => {
     navigator.clipboard.writeText(window.location.href);
     toast("Lien copié dans le presse-papier !");
-    $('shareModal').style.display = 'none';
+    $('shareModal').classList.remove('open');
   });
   $('btnShareJSON').addEventListener('click', () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(serializeAll(), null, 2));
@@ -790,15 +799,14 @@
     document.body.appendChild(dl);
     dl.click();
     dl.remove();
-    $('shareModal').style.display = 'none';
+    $('shareModal').classList.remove('open');
   });
   $('btnSharePDF').addEventListener('click', () => {
-    $('shareModal').style.display = 'none';
+    $('shareModal').classList.remove('open');
     toast("Génération du PDF en cours...");
     const element = weeksWrapper;
     html2pdf().from(element).save('emploi_du_temps.pdf');
   });
-
   // Navigation semaines
   function goToWeek(wk) {
     currentVisibleWeek = wk;
