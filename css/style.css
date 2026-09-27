@@ -136,6 +136,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .catalog-dropdown-panel.open {
   display: block;
 }
+#shareModal{ left: auto; right: 0; }
 .catalog-tabs {
   display: flex;
   border-bottom: 2px solid #e0e0e0;
