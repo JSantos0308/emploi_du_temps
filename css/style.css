@@ -1,4 +1,5 @@
 :root {
+  --btn-scale: 1;
   --bg-theorie:#8bb0e8; --bg-labo:#c5fa79; --bg-exercices:#98d380; --bg-etude:#ff9999;
   --bg-default:#e9ecef;
   --border-color:#cccccc; --row-height:56px;
@@ -25,17 +26,17 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .auth-skip{ text-align:center; margin-top:4px; }
 
 .controls-box{
-  background:#fff; border-bottom:1px solid #e0e0e0; padding:clamp(2px,0.8vw,4px) clamp(3px,1.5vw,8px); min-height:36px; width:100%;
-  display:flex; justify-content:space-between; align-items:center; gap:clamp(2px,0.8vw,6px); flex-wrap:nowrap; flex:0 0 auto; z-index:20;
+  background:#fff; border-bottom:1px solid #e0e0e0; padding:calc(4px * var(--btn-scale)) calc(8px * var(--btn-scale)); min-height:36px; width:100%;
+  display:flex; justify-content:space-between; align-items:center; gap:calc(6px * var(--btn-scale)); flex-wrap:nowrap; flex:0 0 auto; z-index:20;
   overflow-x:auto; overflow-y:hidden;
 }
-.controls-group{ display:flex; align-items:center; gap:clamp(2px,0.8vw,6px); flex-wrap:nowrap; flex-shrink:0; }
+.controls-group{ display:flex; align-items:center; gap:calc(6px * var(--btn-scale)); flex-wrap:nowrap; flex-shrink:0; }
 
 .nav-bar-custom {
   display: flex;
   align-items: center;
-  gap: clamp(4px,1.2vw,8px);
-  font-size: clamp(9px,2.2vw,11px);
+  gap: calc(8px * var(--btn-scale));
+  font-size: calc(11px * var(--btn-scale));
   font-weight: bold;
   color: #333;
   flex-shrink:0;
@@ -46,9 +47,9 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   cursor: pointer;
-  font-size: clamp(9px,2.2vw,11px);
+  font-size: calc(11px * var(--btn-scale));
   font-weight: bold;
-  padding: clamp(2px,0.6vw,3px) clamp(4px,1.6vw,8px);
+  padding: calc(3px * var(--btn-scale)) calc(8px * var(--btn-scale));
   flex-shrink:0;
   white-space:nowrap;
 }
@@ -57,30 +58,30 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 .week-switcher {
   display: flex;
   align-items: center;
-  gap: clamp(2px,0.6vw,4px);
+  gap: calc(4px * var(--btn-scale));
   background: #f8f9fa;
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: clamp(1px,0.3vw,1px) clamp(2px,0.8vw,4px);
+  padding: calc(1px * var(--btn-scale)) calc(4px * var(--btn-scale));
   flex-shrink:0;
 }
 .btn-week-nav {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: clamp(10px,2.4vw,12px);
+  font-size: calc(12px * var(--btn-scale));
   font-weight: bold;
   color: #111;
-  padding: 0 clamp(1px,0.4vw,2px);
+  padding: 0 calc(2px * var(--btn-scale));
 }
 .btn-week-nav:hover { color: #000; }
-.current-week-label { font-size: clamp(8px,1.8vw,10.5px); text-transform: lowercase; }
+.current-week-label { font-size: calc(10.5px * var(--btn-scale)); text-transform: lowercase; }
 
 .date-range-container {
   display: flex;
   align-items: center;
-  gap: clamp(2px,0.6vw,3px);
-  font-size: clamp(8px,1.8vw,10px);
+  gap: calc(3px * var(--btn-scale));
+  font-size: calc(10px * var(--btn-scale));
   flex-shrink:0;
 }
 .week-dates-btn {
@@ -89,8 +90,8 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   border-radius: 4px;
   color: #111;
   font-weight: bold;
-  font-size: clamp(8px,1.8vw,10px);
-  padding: clamp(1px,0.4vw,2px) clamp(2px,0.8vw,4px);
+  font-size: calc(10px * var(--btn-scale));
+  padding: calc(2px * var(--btn-scale)) calc(4px * var(--btn-scale));
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -108,8 +109,8 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 }
 
 .btn-action{
-  padding:clamp(1px,0.4vw,2px) clamp(4px,1.4vw,7px); font-size:clamp(9px,2.2vw,11px); font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
-  background:transparent; color:#111; display:inline-flex; align-items:center; gap:clamp(1px,0.4vw,3px); height:clamp(20px,5vw,24px); white-space:nowrap; flex-shrink:0;
+  padding:calc(2px * var(--btn-scale)) calc(7px * var(--btn-scale)); font-size:calc(11px * var(--btn-scale)); font-weight:bold; border-radius:3px; border:1px solid; cursor:pointer;
+  background:transparent; color:#111; display:inline-flex; align-items:center; gap:calc(3px * var(--btn-scale)); height:calc(24px * var(--btn-scale)); white-space:nowrap; flex-shrink:0;
 }
 .btn-draw{ border-color:#6f42c1; } .btn-copy{ border-color:#007bff; } .btn-clear{ border-color:#dc3545; }
 .btn-logout{ border-color:#6c757d; } .btn-config{ border-color:#343a40; } .btn-history{ border-color:#495057; }
