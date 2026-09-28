@@ -27,7 +27,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
 /* --- Barre d'outils (Taille confortable sur PC) --- */
 .controls-box{
   background:#fff; border-bottom:1px solid #e0e0e0; padding:8px 12px; min-height:44px; width:100%;
-  display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:nowrap; flex:0 0 auto; z-index:20;
+  display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:nowrap; flex:0 0 auto; position:relative; z-index:20;
 }
 .controls-group{ display:flex; align-items:center; gap:8px; flex-wrap:nowrap; flex-shrink:0; }
 
@@ -352,7 +352,7 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   font-size: 10px !important;
   height: 22px !important;
 }
-.toolbar-compact .controls-box {
+.controls-box.toolbar-compact {
   gap: 2px !important;
   padding: 2px 4px !important;
 }
