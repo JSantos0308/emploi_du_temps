@@ -3,7 +3,7 @@
 
   const CONFIG = {
     startDateS1: new Date(2026, 8, 14),
-    weeks: 14,
+    weeks: 14, // semaines affichées au départ : la liste s'allonge automatiquement
     hours: ["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00","23:00"],
     defaultCatalog: [],
     defaultLocations: [],
@@ -12,6 +12,7 @@
 
   const DAYS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
   const H = CONFIG.hours.length;
+  const MAX_WEEKS = 1000; // garde-fou technique (~19 ans), modifiable
   const LS = {
     courses:'timetable_courses_v3', catalog:'timetable_catalog_v3', locations:'timetable_locations_v3',
     strokes:'timetable_strokes_v3', types:'timetable_types_v3'
@@ -41,6 +42,8 @@
   }
 
   let courses = {};
+  let totalWeeks = CONFIG.weeks; // nombre de semaines actuellement construites
+  let rangeFilter = null;        // { start, end } (end = null → sans limite)
   let strokes = [];
   let catalog = readJSON(LS.catalog, CONFIG.defaultCatalog);
   let locations = readJSON(LS.locations, CONFIG.defaultLocations);
@@ -68,18 +71,29 @@
   }
   function normalizeCourses(raw) {
     const out = {};
-    for (let w = 1; w <= CONFIG.weeks; w++) {
-      const k = weekKey(w); out[k] = [];
-      const arr = raw && Array.isArray(raw[k]) ? raw[k] : [];
-      arr.forEach((it) => { const n = it && typeof it === 'object' ? normalizeItem(it) : null; if (n) out[k].push(n); });
+    if (raw && typeof raw === 'object') {
+      Object.keys(raw).forEach((k) => {
+        if (!/^S\d+$/.test(k)) return;
+        const n = weekNum(k); if (n < 1 || n > MAX_WEEKS) return;
+        out[k] = [];
+        const arr = Array.isArray(raw[k]) ? raw[k] : [];
+        arr.forEach((it) => { const m = it && typeof it === 'object' ? normalizeItem(it) : null; if (m) out[k].push(m); });
+      });
     }
+    for (let w = 1; w <= totalWeeks; w++) { const k = weekKey(w); if (!out[k]) out[k] = []; }
     return out;
+  }
+  function highestWeekWithData() {
+    let m = 0;
+    Object.keys(courses).forEach((k) => { if (courses[k].length) m = Math.max(m, weekNum(k)); });
+    strokes.forEach((st) => { m = Math.max(m, weekNum(st.w)); });
+    return m;
   }
   function normalizeStrokes(raw) {
     if (!Array.isArray(raw)) return [];
     return raw.filter((s) => {
       if (!s || !/^S\d+$/.test(s.w)) return false;
-      const n = weekNum(s.w); if (n < 1 || n > CONFIG.weeks) return false;
+      const n = weekNum(s.w); if (n < 1 || n > MAX_WEEKS) return false;
       if (s.kind !== 'pen' && s.kind !== 'highlight') return false;
       if (!Array.isArray(s.pts) || s.pts.length < 2) return false;
       return s.pts.every((p) => Array.isArray(p) && p.length === 2 && isFinite(p[0]) && isFinite(p[1]));
@@ -106,7 +120,7 @@
 
   function serializeAll() {
     const out = {};
-    Object.keys(courses).forEach((k) => { out[k] = courses[k].map((c) => ({ day:c.day, hour:c.hour, duration:c.duration, title:c.title, subtitle:c.subtitle, type:c.type, loc:c.loc })); });
+    Object.keys(courses).forEach((k) => { if (!courses[k].length) return; out[k] = courses[k].map((c) => ({ day:c.day, hour:c.hour, duration:c.duration, title:c.title, subtitle:c.subtitle, type:c.type, loc:c.loc })); });
     return { courses: out, strokes, catalog, locations, types: typesListArray };
   }
   function saveLocalAll() {
@@ -200,68 +214,88 @@
     $('endDateText').textContent = fmtShort(endSun) + '/' + endSun.getFullYear();
   }
 
-  function buildWeeks() {
+  function buildWeek(w) {
     const now = new Date();
     const todayDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const wk = weekKey(w), mon = mondayOf(w), sun = new Date(mon); sun.setDate(sun.getDate()+6);
 
-    for (let w = 1; w <= CONFIG.weeks; w++) {
-      const wk = weekKey(w), mon = mondayOf(w), sun = new Date(mon); sun.setDate(sun.getDate()+6);
+    const block = document.createElement('div'); block.className = 'week-block'; block.id = 'week-block-' + wk;
+    blocks[w] = block;
+    if (w > 1) block.appendChild(Object.assign(document.createElement('div'), { className:'week-divider' }));
 
-      const block = document.createElement('div'); block.className = 'week-block'; block.id = 'week-block-' + wk;
-      blocks[w] = block;
-      if (w > 1) block.appendChild(Object.assign(document.createElement('div'), { className:'week-divider' }));
-
-      const headerRow = document.createElement('div'); headerRow.className = 'header-row';
-      headerRows[w] = headerRow;
-      const corner = document.createElement('div'); corner.className = 'header-cell'; corner.textContent = wk; headerRow.appendChild(corner);
+    const headerRow = document.createElement('div'); headerRow.className = 'header-row';
+    headerRows[w] = headerRow;
+    const corner = document.createElement('div'); corner.className = 'header-cell'; corner.textContent = wk; headerRow.appendChild(corner);
+    
+    for (let d = 0; d < 7; d++) {
+      const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
+      const cell = document.createElement('div'); cell.className = 'header-cell';
+      cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate);
       
-      for (let d = 0; d < 7; d++) {
-        const dayDate = new Date(mon); dayDate.setDate(mon.getDate() + d);
-        const cell = document.createElement('div'); cell.className = 'header-cell';
-        cell.textContent = DAYS[d] + ' ' + fmtShort(dayDate);
-        
-        const isToday = (dayDate.getTime() === todayDateOnly.getTime());
-        if (isToday) cell.classList.add('today-col');
-        headerRow.appendChild(cell);
-      }
-      block.appendChild(headerRow);
-
-      const grid = document.createElement('div'); grid.className = 'timetable-body';
-      grid.style.gridTemplateRows = 'repeat(' + H + ', var(--row-height))';
-      CONFIG.hours.forEach((label, h) => {
-        const timeCell = document.createElement('div'); timeCell.className = 'time-cell'; timeCell.textContent = label;
-        grid.appendChild(timeCell);
-        for (let day = 0; day < 7; day++) {
-          const slot = document.createElement('div'); slot.className = 'slot';
-          slotMap[wk + '-' + day + '-' + h] = slot;
-
-          slot.addEventListener('mouseenter', () => {
-            hovered = { week: wk, day, hour: h };
-            if (!isSlotCovered(wk, day, h)) slot.classList.add('slot-hover');
-          });
-          slot.addEventListener('mouseleave', () => {
-            if (hovered && hovered.week===wk && hovered.day===day && hovered.hour===h) hovered = null;
-            slot.classList.remove('slot-hover');
-          });
-          slot.addEventListener('click', (e) => {
-            if (viewOnly || drawMode !== 'none') return;
-            if (e.target.closest('.course-card')) return;
-            openModal(wk, day, h);
-          });
-          slot.addEventListener('dragover', (e) => { if (!dragged || viewOnly) return; e.preventDefault(); slot.classList.add('drag-over'); });
-          slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
-          slot.addEventListener('drop', (e) => {
-            e.preventDefault(); slot.classList.remove('drag-over');
-            if (!dragged || viewOnly) return;
-            const d = dragged; dragged = null; moveItem(d.week, d.id, wk, day, h);
-          });
-          grid.appendChild(slot);
-        }
-      });
-      block.appendChild(grid);
-      weeksWrapper.appendChild(block);
+      const isToday = (dayDate.getTime() === todayDateOnly.getTime());
+      if (isToday) cell.classList.add('today-col');
+      headerRow.appendChild(cell);
     }
-    updateRangeDisplay('S1', weekKey(CONFIG.weeks));
+    block.appendChild(headerRow);
+
+    const grid = document.createElement('div'); grid.className = 'timetable-body';
+    grid.style.gridTemplateRows = 'repeat(' + H + ', var(--row-height))';
+    CONFIG.hours.forEach((label, h) => {
+      const timeCell = document.createElement('div'); timeCell.className = 'time-cell'; timeCell.textContent = label;
+      grid.appendChild(timeCell);
+      for (let day = 0; day < 7; day++) {
+        const slot = document.createElement('div'); slot.className = 'slot';
+        slotMap[wk + '-' + day + '-' + h] = slot;
+
+        slot.addEventListener('mouseenter', () => {
+          hovered = { week: wk, day, hour: h };
+          if (!isSlotCovered(wk, day, h)) slot.classList.add('slot-hover');
+        });
+        slot.addEventListener('mouseleave', () => {
+          if (hovered && hovered.week===wk && hovered.day===day && hovered.hour===h) hovered = null;
+          slot.classList.remove('slot-hover');
+        });
+        slot.addEventListener('click', (e) => {
+          if (viewOnly || drawMode !== 'none') return;
+          if (e.target.closest('.course-card')) return;
+          openModal(wk, day, h);
+        });
+        slot.addEventListener('dragover', (e) => { if (!dragged || viewOnly) return; e.preventDefault(); slot.classList.add('drag-over'); });
+        slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+        slot.addEventListener('drop', (e) => {
+          e.preventDefault(); slot.classList.remove('drag-over');
+          if (!dragged || viewOnly) return;
+          const d = dragged; dragged = null; moveItem(d.week, d.id, wk, day, h);
+        });
+        grid.appendChild(slot);
+      }
+    });
+    block.appendChild(grid);
+    if (!courses[wk]) courses[wk] = [];
+    weeksWrapper.appendChild(block);
+    if (rangeFilter && (w < rangeFilter.start || (rangeFilter.end && w > rangeFilter.end))) block.style.display = 'none';
+  }
+
+  function refreshRangeDisplay() {
+    const a = rangeFilter ? rangeFilter.start : 1;
+    const b = rangeFilter && rangeFilter.end ? rangeFilter.end : totalWeeks;
+    updateRangeDisplay(weekKey(a), weekKey(b));
+  }
+
+  function buildWeeks() {
+    for (let w = 1; w <= totalWeeks; w++) buildWeek(w);
+    refreshRangeDisplay();
+  }
+
+  // Construit les semaines manquantes jusqu'à la semaine n (illimité, dans la limite de MAX_WEEKS)
+  function ensureWeeksUpTo(n) {
+    n = Math.min(Math.floor(n), MAX_WEEKS);
+    if (n <= totalWeeks) return false;
+    for (let w = totalWeeks + 1; w <= n; w++) buildWeek(w);
+    totalWeeks = n;
+    refreshRangeDisplay();
+    resizeCanvas();
+    return true;
   }
 
   function getBaseType(typeStr) {
@@ -618,7 +652,7 @@
     redraw();
   }
   function contentPts(s) {
-    const n = weekNum(s.w); const top = blocks[n].offsetTop;
+    const n = weekNum(s.w); const top = blocks[n] ? blocks[n].offsetTop : 0;
     return s.pts.map((p) => [p[0]*cssW, p[1] + top]);
   }
   function drawStroke(s) {
@@ -656,7 +690,7 @@
 
   function pointerPos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function weekAtY(y) {
-    for (let w = 1; w <= CONFIG.weeks; w++) {
+    for (let w = 1; w <= totalWeeks; w++) {
       const b = blocks[w];
       if (b && y >= b.offsetTop && y < b.offsetTop + b.offsetHeight) return { key: weekKey(w), top: b.offsetTop };
     }
@@ -768,6 +802,10 @@
     locations = normalizeLocations(readJSON(LS.locations, CONFIG.defaultLocations));
     typesListArray = normalizeTypes(readJSON(LS.types, CONFIG.defaultTypes));
 
+    // Afficher au moins toutes les semaines qui contiennent des données (+1 de marge)
+    totalWeeks = Math.min(MAX_WEEKS, Math.max(totalWeeks, CONFIG.weeks, highestWeekWithData() + 1));
+    courses = normalizeCourses(serializeAll().courses);
+
     weeksWrapper.innerHTML = '';
     buildWeeks();
     updateRowHeight();
@@ -834,7 +872,14 @@
     const wrapper = weeksWrapper;
 
     // 1. Application des sauts de page selon le nombre de semaines par page
-    const weekBlocks = wrapper.querySelectorAll('.week-block');
+    const allBlocks = Array.from(wrapper.querySelectorAll('.week-block'));
+    // Les semaines vides ajoutées par le défilement infini ne sont pas imprimées
+    const lastToPrint = Math.max(CONFIG.weeks, highestWeekWithData());
+    const hiddenForPrint = [];
+    allBlocks.forEach((b, i) => {
+      if (i + 1 > lastToPrint && b.style.display !== 'none') { b.style.display = 'none'; hiddenForPrint.push(b); }
+    });
+    const weekBlocks = allBlocks.filter((b) => b.style.display !== 'none');
     weekBlocks.forEach((block, index) => {
       if ((index + 1) % weeksPerPage === 0 && index < weekBlocks.length - 1) {
         block.style.pageBreakAfter = 'always';
@@ -894,6 +939,7 @@
         block.style.pageBreakAfter = '';
         block.style.breakAfter = '';
       });
+      hiddenForPrint.forEach((b) => { b.style.display = ''; });
       toast("PDF téléchargé avec succès !");
     }).catch((err) => {
       if (titleEl) titleEl.remove();
@@ -903,24 +949,45 @@
         block.style.pageBreakAfter = '';
         block.style.breakAfter = '';
       });
+      hiddenForPrint.forEach((b) => { b.style.display = ''; });
       toast("Erreur lors de la génération du PDF.");
       console.error(err);
     });
   });
 
   function goToWeek(wk) {
-    currentVisibleWeek = wk;
-    updateNavBarDisplay(wk);
-    const b = blocks[weekNum(wk)];
+    const n = Math.min(Math.max(weekNum(wk) || 1, 1), MAX_WEEKS);
+    ensureWeeksUpTo(n + 1);
+    currentVisibleWeek = weekKey(n);
+    updateNavBarDisplay(currentVisibleWeek);
+    const b = blocks[n];
     if (b) container.scrollTop = b.offsetTop - 5;
   }
 
   $('btnTodayNav').addEventListener('click', () => goToWeek(getCurrentWeekKey()));
-  $('btnPrevWeek').addEventListener('click', () => {     let n = weekNum(currentVisibleWeek) - 1;     if (n < 1) n = 1;     goToWeek(weekKey(n));   });$('btnNextWeek').addEventListener('click', () => {
-    let n = weekNum(currentVisibleWeek) + 1;
-    if (n > CONFIG.weeks) n = CONFIG.weeks;
-    goToWeek(weekKey(n));
+  $('btnPrevWeek').addEventListener('click', () => {
+    goToWeek(weekKey(Math.max(1, weekNum(currentVisibleWeek) - 1)));
   });
+  $('btnNextWeek').addEventListener('click', () => {
+    goToWeek(weekKey(Math.min(MAX_WEEKS, weekNum(currentVisibleWeek) + 1)));
+  });
+
+  // Défilement infini : on ajoute des semaines en approchant du bas,
+  // et on met à jour la semaine « courante » selon ce qui est affiché en haut.
+  let scrollTick = false;
+  container.addEventListener('scroll', () => {
+    if (scrollTick) return;
+    scrollTick = true;
+    requestAnimationFrame(() => {
+      scrollTick = false;
+      const unbounded = !rangeFilter || !rangeFilter.end;
+      if (unbounded && container.scrollHeight - container.scrollTop - container.clientHeight < 1500) {
+        ensureWeeksUpTo(totalWeeks + 4);
+      }
+      const w = weekAtY(container.scrollTop + 30);
+      if (w && w.key !== currentVisibleWeek) { currentVisibleWeek = w.key; updateNavBarDisplay(w.key); }
+    });
+  }, { passive: true });
 
   function dateToWeekNum(dateVal) {
     const selectedDate = new Date(dateVal);
@@ -929,30 +996,30 @@
     const diffDays = Math.floor(diffTime / 86400000);
     if (diffDays < 0) return 1;
     let n = Math.floor(diffDays / 7) + 1;
-    return Math.min(Math.max(n, 1), CONFIG.weeks);
+    return Math.min(Math.max(n, 1), MAX_WEEKS);
   }
 
   function applyDateRangeFilter() {
     const startInput = $('startDatePicker').value;
     const endInput = $('endDatePicker').value;
 
-    let startW = 1;
-    let endW = CONFIG.weeks;
+    const startW = startInput ? dateToWeekNum(startInput) : 1;
+    const endW = endInput ? dateToWeekNum(endInput) : null; // null = sans limite
 
-    if (startInput) startW = dateToWeekNum(startInput);
-    if (endInput) endW = dateToWeekNum(endInput);
-
-    if (startW > endW) {
+    if (endW && startW > endW) {
       toast("La date de début doit être antérieure à la date de fin.");
       return;
     }
 
-    for (let w = 1; w <= CONFIG.weeks; w++) {
-      blocks[w].style.display = (w >= startW && w <= endW) ? '' : 'none';
+    rangeFilter = { start: startW, end: endW };
+    if (endW) ensureWeeksUpTo(endW);
+
+    for (let w = 1; w <= totalWeeks; w++) {
+      blocks[w].style.display = (w >= startW && (!endW || w <= endW)) ? '' : 'none';
     }
-    updateRangeDisplay(weekKey(startW), weekKey(endW));
+    refreshRangeDisplay();
     resizeCanvas();
-    toast("Affichage filtré de la semaine " + startW + " à la semaine " + endW);
+    toast(endW ? "Affichage de la semaine " + startW + " à la semaine " + endW : "Affichage à partir de la semaine " + startW);
   }
 
   $('btnStartDate').addEventListener('click', () => {
@@ -973,7 +1040,7 @@
     const diffDays = Math.floor(diffTime / 86400000);
     if (diffDays < 0) return 'S1';
     let n = Math.floor(diffDays / 7) + 1; 
-    n = Math.min(Math.max(n, 1), CONFIG.weeks);
+    n = Math.min(Math.max(n, 1), MAX_WEEKS);
     return weekKey(n);
   }
   function updateNavBarDisplay(wk) {
