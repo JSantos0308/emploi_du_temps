@@ -52,6 +52,7 @@
 
   let filter = { course: '', type: '' };
   let hovered = null;
+  let suppressClickUntil = 0; // évite d'ouvrir la fenêtre juste après un étirement
   let dragged = null;
   let modalCtx = { editing: null };
   let currentVisibleWeek = 'S1';
@@ -270,7 +271,7 @@
           slot.classList.remove('slot-hover');
         });
         slot.addEventListener('click', (e) => {
-          if (viewOnly || drawMode !== 'none') return;
+          if (viewOnly || drawMode !== 'none' || Date.now() < suppressClickUntil) return;
           if (e.target.closest('.course-card')) return;
           openModal(wk, day, h);
         });
@@ -340,6 +341,46 @@
     return true;
   }
 
+  // Étirer un cours verticalement (par pas d'une heure) pour changer sa durée
+  function startResize(e, week, item, card) {
+    if (viewOnly || drawMode !== 'none') return;
+    e.preventDefault(); e.stopPropagation();
+    const grip = e.currentTarget;
+    try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+    const slot = slotMap[week + '-' + item.day + '-' + item.hour];
+    const rowH = (slot && slot.offsetHeight) || 56;
+    const startY = e.clientY, startDur = item.duration;
+    let newDur = startDur;
+    card.draggable = false;
+    card.classList.add('resizing');
+
+    const onMove = (ev) => {
+      let d = startDur + Math.round((ev.clientY - startY) / rowH);
+      d = Math.max(1, Math.min(d, H - item.hour));
+      while (d > startDur && placementError(week, item.day, item.hour, d, item.id)) d--; // s'arrête au cours suivant
+      if (d !== newDur) { newDur = d; card.style.height = 'calc(var(--row-height) * ' + d + ' - 2px)'; }
+    };
+    const finish = (commit) => {
+      grip.removeEventListener('pointermove', onMove);
+      grip.removeEventListener('pointerup', onUp);
+      grip.removeEventListener('pointercancel', onCancel);
+      suppressClickUntil = Date.now() + 300;
+      card.classList.remove('resizing');
+      if (commit && newDur !== startDur) {
+        item.duration = newDur;
+        saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards();
+      } else {
+        card.style.height = 'calc(var(--row-height) * ' + startDur + ' - 2px)';
+        card.draggable = true;
+      }
+    };
+    const onUp = () => finish(true);
+    const onCancel = () => finish(false);
+    grip.addEventListener('pointermove', onMove);
+    grip.addEventListener('pointerup', onUp);
+    grip.addEventListener('pointercancel', onCancel);
+  }
+
   function buildCard(week, item) {
     const card = document.createElement('div');
     const baseType = getBaseType(item.type);
@@ -370,7 +411,16 @@
       card.appendChild(l); 
     }
 
-    card.addEventListener('click', (e) => { e.stopPropagation(); if (!viewOnly && drawMode === 'none') openModal(week, item.day, item.hour); });
+    if (!viewOnly) {
+      const grip = document.createElement('div');
+      grip.className = 'resize-handle';
+      grip.title = 'Étirer pour changer la durée';
+      grip.addEventListener('pointerdown', (e) => startResize(e, week, item, card));
+      grip.addEventListener('click', (e) => e.stopPropagation());
+      card.appendChild(grip);
+    }
+
+    card.addEventListener('click', (e) => { e.stopPropagation(); if (!viewOnly && drawMode === 'none' && Date.now() >= suppressClickUntil) openModal(week, item.day, item.hour); });
     card.addEventListener('dragstart', (e) => {
       if (viewOnly) { e.preventDefault(); return; }
       dragged = { week, id: item.id }; e.dataTransfer.effectAllowed = 'move';
@@ -720,7 +770,7 @@
       if (it) { copiedBuffer = { title: it.title, subtitle: it.subtitle, type: it.type, loc: it.loc, duration: it.duration }; toast('Cours copié.'); }
     } else if (key === 'v' && copiedBuffer) {
       e.preventDefault();
-      const err = placementError(hovered.week, hovered.hour, copiedBuffer.duration, null);
+      const err = placementError(hovered.week, hovered.day, hovered.hour, copiedBuffer.duration, null);
       if (err) { toast(err); return; }
       courses[hovered.week].push({ id: uid(), day: hovered.day, hour: hovered.hour, duration: copiedBuffer.duration, title: copiedBuffer.title, subtitle: copiedBuffer.subtitle, type: copiedBuffer.type, loc: copiedBuffer.loc });
       saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
@@ -992,6 +1042,7 @@
       .course-card .location { font-size: ${Math.max(6, fontSize - 2)}px !important; }
       .header-cell { font-size: ${fontSize}px !important; }
       .time-cell { font-size: ${Math.max(6, fontSize - 1)}px !important; }
+      .resize-handle { display: none !important; }
     `;
 
     if (colorMode === 'grayscale') {
