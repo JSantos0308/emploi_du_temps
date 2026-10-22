@@ -370,3 +370,15 @@ body{ display:flex; flex-direction:column; padding:0 14px; }
   padding: 1px 2px !important;
   font-size: 8.5px !important;
 }
+
+/* Poignée pour étirer un cours (changer sa durée) */
+.resize-handle{
+  position:absolute; left:0; right:0; bottom:0; height:10px; cursor:ns-resize; touch-action:none; z-index:7;
+  display:flex; align-items:flex-end; justify-content:center; padding-bottom:2px;
+}
+.resize-handle::after{
+  content:""; width:22px; height:3px; border-top:1px solid rgba(0,0,0,.35); border-bottom:1px solid rgba(0,0,0,.35);
+  opacity:.45; transition:opacity .15s;
+}
+.course-card:hover .resize-handle::after, .course-card.resizing .resize-handle::after{ opacity:1; }
+.course-card.resizing{ cursor:ns-resize; box-shadow:0 0 0 2px #007bff; }
