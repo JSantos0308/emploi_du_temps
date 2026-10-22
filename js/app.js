@@ -15,7 +15,7 @@
   const MAX_WEEKS = 1000; // garde-fou technique (~19 ans), modifiable
   const LS = {
     courses:'timetable_courses_v3', catalog:'timetable_catalog_v3', locations:'timetable_locations_v3',
-    strokes:'timetable_strokes_v3', types:'timetable_types_v3'
+    strokes:'timetable_strokes_v3', types:'timetable_types_v3', typeColors:'timetable_typecolors_v3'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -48,6 +48,7 @@
   let catalog = readJSON(LS.catalog, CONFIG.defaultCatalog);
   let locations = readJSON(LS.locations, CONFIG.defaultLocations);
   let typesListArray = readJSON(LS.types, CONFIG.defaultTypes);
+  let typeColors = readJSON(LS.typeColors, {}); // { 'Examen': '#dc3545', ... }
 
   let filter = { course: '', type: '' };
   let hovered = null;
@@ -112,6 +113,17 @@
     const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 50)).slice(0, 100);
     return out;
   }
+  function normalizeTypeColors(raw, allowedNames) {
+    const out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach((k) => {
+      const name = k.trim().slice(0, 50);
+      if (!name || /^__.*__$/.test(name)) return;
+      if (allowedNames && !allowedNames.includes(name)) return;
+      if (typeof raw[k] === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw[k])) out[name] = raw[k].toLowerCase();
+    });
+    return out;
+  }
   function normalizeLocations(raw) {
     if (!Array.isArray(raw)) return [];
     const out = raw.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().slice(0, 80)).slice(0, 300);
@@ -121,7 +133,7 @@
   function serializeAll() {
     const out = {};
     Object.keys(courses).forEach((k) => { if (!courses[k].length) return; out[k] = courses[k].map((c) => ({ day:c.day, hour:c.hour, duration:c.duration, title:c.title, subtitle:c.subtitle, type:c.type, loc:c.loc })); });
-    return { courses: out, strokes, catalog, locations, types: typesListArray };
+    return { courses: out, strokes, catalog, locations, types: typesListArray, typeColors };
   }
   function saveLocalAll() {
     const s = serializeAll();
@@ -130,6 +142,7 @@
     writeJSON(LS.catalog, s.catalog);
     writeJSON(LS.locations, s.locations);
     writeJSON(LS.types, s.types);
+    writeJSON(LS.typeColors, s.typeColors);
   }
 
   let history = []; let historyIndex = -1; let restoring = false;
@@ -152,6 +165,7 @@
     catalog = normalizeCatalog(data.catalog);
     locations = normalizeLocations(data.locations);
     typesListArray = normalizeTypes(data.types);
+    typeColors = normalizeTypeColors(data.typeColors);
     restoring = true;
     renderCards(); updateLocationsDatalist(); updateCoursesDatalist(); updateTypesDatalist(); refreshFilterOptions(); redraw();
     restoring = false;
@@ -308,6 +322,18 @@
     return 'default';
   }
 
+  const DEFAULT_TYPE_COLORS = { theorie:'#8bb0e8', exercices:'#98d380', labo:'#c5fa79', etude:'#ff9999', default:'#e9ecef' };
+  function getTypeColor(type) {
+    const t = (type || '').trim().toLowerCase();
+    if (!t) return null;
+    const k = Object.keys(typeColors).find((n) => n.trim().toLowerCase() === t);
+    return k ? typeColors[k] : null;
+  }
+  function isDarkColor(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return (0.299*r + 0.587*g + 0.114*b) < 140;
+  }
+
   function cardMatchesFilter(item) {
     if (filter.course && item.title !== filter.course) return false;
     if (filter.type && item.type !== filter.type) return false;
@@ -320,6 +346,9 @@
     card.className = 'course-card ' + baseType + (cardMatchesFilter(item) ? '' : ' dimmed');
     card.style.height = 'calc(var(--row-height) * ' + item.duration + ' - 2px)';
     card.draggable = !viewOnly;
+    const customColor = getTypeColor(item.type);
+    const darkText = customColor && isDarkColor(customColor);
+    if (customColor) { card.style.background = customColor; if (darkText) card.style.color = '#fff'; }
 
     const title = document.createElement('div'); 
     title.className = 'header-title';
@@ -330,6 +359,7 @@
       const s = document.createElement('div'); 
       s.className = 'subtitle'; 
       s.textContent = item.subtitle; 
+      if (darkText) s.style.color = 'inherit';
       card.appendChild(s); 
     }
     
@@ -443,9 +473,69 @@
     if (catalogPanelOpen) {
       $('panelCoursesTextarea').value = catalog.map((c) => c.subtitle ? c.name + ' | ' + c.subtitle : c.name).join('\n');
       $('panelTypesTextarea').value = typesListArray.join('\n');
+      typeColorsDraft = Object.assign({}, typeColors);
+      renderTypeColorRows();
       $('panelLocauxTextarea').value = locations.join('\n');
     }
   }
+
+  // --- Couleur par modalité (onglet « Modalités » du catalogue) ---
+  let typeColorsDraft = {};
+  function renderTypeColorRows() {
+    let box = $('typeColorRows');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'typeColorRows';
+      box.style.cssText = 'margin-top:8px; max-height:150px; overflow-y:auto; border-top:1px solid #e0e0e0; padding-top:6px;';
+      $('panelTypesTextarea').insertAdjacentElement('afterend', box);
+    }
+    box.innerHTML = '';
+    const names = Array.from(new Set($('panelTypesTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l)));
+    if (!names.length) return;
+
+    const title = document.createElement('div');
+    title.textContent = 'Couleur de chaque modalité';
+    title.style.cssText = 'font-weight:bold; margin-bottom:4px;';
+    box.appendChild(title);
+
+    names.forEach((name) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; align-items:center; gap:6px; margin-bottom:4px;';
+
+      const label = document.createElement('span');
+      label.textContent = name;
+      label.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+
+      const picker = document.createElement('input');
+      picker.type = 'color';
+      picker.style.cssText = 'width:32px; height:22px; padding:0; border:1px solid #ccc; border-radius:3px; cursor:pointer; flex:none;';
+      picker.value = typeColorsDraft[name] || DEFAULT_TYPE_COLORS[getBaseType(name)] || DEFAULT_TYPE_COLORS.default;
+
+      const state = document.createElement('button');
+      state.type = 'button';
+      state.style.cssText = 'font-size:10px; border:none; background:none; color:#007bff; text-decoration:underline; cursor:pointer; padding:0; min-width:38px; text-align:left;';
+      const refreshState = () => {
+        const custom = !!typeColorsDraft[name];
+        state.textContent = custom ? '↺ auto' : 'auto';
+        state.style.color = custom ? '#007bff' : '#888';
+        state.style.textDecoration = custom ? 'underline' : 'none';
+        state.style.cursor = custom ? 'pointer' : 'default';
+      };
+
+      picker.addEventListener('input', () => { typeColorsDraft[name] = picker.value; refreshState(); });
+      state.addEventListener('click', (e) => {
+        e.stopPropagation(); // le bouton est retiré du DOM : évite de fermer le panneau
+        if (!typeColorsDraft[name]) return;
+        delete typeColorsDraft[name];
+        renderTypeColorRows();
+      });
+      refreshState();
+
+      row.appendChild(label); row.appendChild(picker); row.appendChild(state);
+      box.appendChild(row);
+    });
+  }
+  $('panelTypesTextarea').addEventListener('input', renderTypeColorRows);
 
   $('btnCatalogToggle').addEventListener('click', toggleCatalogPanel);
 
@@ -489,7 +579,8 @@
   $('btnSavePanelTypes').addEventListener('click', () => {
     const lines = $('panelTypesTextarea').value.split('\n').map((l) => l.trim()).filter((l) => l);
     typesListArray = normalizeTypes(lines);
-    updateTypesDatalist();
+    typeColors = normalizeTypeColors(typeColorsDraft, typesListArray);
+    updateTypesDatalist(); renderCards();
     saveLocalAll(); scheduleCloudSave(); pushHistory();
     toast("Liste des modalités mise à jour.");
     catalogPanelOpen = false;
@@ -776,6 +867,7 @@
         catalog = normalizeCatalog(data.catalog);
         locations = normalizeLocations(data.locations);
         typesListArray = normalizeTypes(data.types);
+        typeColors = normalizeTypeColors(data.typeColors);
         saveLocalAll();
       } else {
         courses = normalizeCourses({});
@@ -801,6 +893,7 @@
     catalog = normalizeCatalog(readJSON(LS.catalog, CONFIG.defaultCatalog));
     locations = normalizeLocations(readJSON(LS.locations, CONFIG.defaultLocations));
     typesListArray = normalizeTypes(readJSON(LS.types, CONFIG.defaultTypes));
+    typeColors = normalizeTypeColors(readJSON(LS.typeColors, {}));
 
     // Afficher au moins toutes les semaines qui contiennent des données (+1 de marge)
     totalWeeks = Math.min(MAX_WEEKS, Math.max(totalWeeks, CONFIG.weeks, highestWeekWithData() + 1));
