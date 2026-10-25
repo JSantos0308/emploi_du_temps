@@ -1200,15 +1200,27 @@
     toast("Semaine effacée.");
   });
 
-  $('btnCopyPrev').addEventListener('click', () => {
+  // Copier la semaine affichée, puis la coller sur n'importe quelle autre semaine
+  let weekBuffer = null; // { from: 'S3', items: [...] }
+
+  $('btnCopyWeek').addEventListener('click', () => {
     if (viewOnly) return;
-    const n = weekNum(currentVisibleWeek);
-    if (n <= 1) { toast("C'est la première semaine."); return; }
-    const prevWk = weekKey(n - 1);
-    const curWk = weekKey(n);
-    courses[curWk] = (courses[prevWk] || []).map((c) => ({ ...c, id: uid() }));
+    const wk = currentVisibleWeek;
+    const items = (courses[wk] || []).map((c) => { const { id, ...rest } = c; return rest; });
+    if (!items.length) { toast("La semaine " + wk.toUpperCase() + " est vide, rien à copier."); return; }
+    weekBuffer = { from: wk, items };
+    $('btnPasteWeek').style.display = '';
+    toast("Semaine " + wk.toUpperCase() + " copiée (" + items.length + " cours). Va sur une autre semaine et clique sur 📥.");
+  });
+
+  $('btnPasteWeek').addEventListener('click', () => {
+    if (viewOnly || !weekBuffer) return;
+    const wk = currentVisibleWeek;
+    if (wk === weekBuffer.from) { toast("Choisis une autre semaine que celle copiée."); return; }
+    if ((courses[wk] || []).length && !confirm("Cette semaine contient déjà des cours : ils seront remplacés. Continuer ?")) return;
+    courses[wk] = weekBuffer.items.map((c) => ({ ...c, id: uid() }));
     saveLocalAll(); scheduleCloudSave(); pushHistory(); renderCards(); refreshFilterOptions();
-    toast("Cours de la semaine précédente copiés.");
+    toast("Semaine " + weekBuffer.from.toUpperCase() + " collée dans " + wk.toUpperCase() + ".");
   });
 
 })();
